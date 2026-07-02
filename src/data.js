@@ -1,0 +1,114 @@
+// Static UI data: scheme cards, helplines, and lightweight i18n strings.
+
+export const SCHEMES = {
+  poshan: {
+    id: 'poshan',
+    icon: '🍲',
+    color: '#2e9e5b',
+    tint: '#e8f6ee',
+    name: { en: 'Poshan Abhiyaan', hi: 'पोषण अभियान' },
+    tag: { en: 'Nutrition & Maternal / Child Health', hi: 'पोषण व मातृ-शिशु स्वास्थ्य' },
+    blurb: {
+      en: 'Nutrition support, pregnancy & child health, Anganwadi services, PMMVY ₹5,000 benefit.',
+      hi: 'पोषण सहायता, गर्भावस्था व बाल स्वास्थ्य, आंगनवाड़ी सेवाएँ, PMMVY ₹5,000 लाभ।',
+    },
+  },
+  vatsalya: {
+    id: 'vatsalya',
+    icon: '🛡️',
+    color: '#f08a24',
+    tint: '#fdf1e3',
+    name: { en: 'Mission Vatsalya', hi: 'मिशन वात्सल्य' },
+    tag: { en: 'Child Protection & Welfare', hi: 'बाल संरक्षण व कल्याण' },
+    blurb: {
+      en: 'Child safety, CHILDLINE 1098, adoption (CARA), help for children in distress.',
+      hi: 'बाल सुरक्षा, चाइल्डलाइन 1098, गोद लेना (CARA), संकटग्रस्त बच्चों की मदद।',
+    },
+  },
+  shakti: {
+    id: 'shakti',
+    icon: '💪',
+    color: '#b0138e',
+    tint: '#fbe8f6',
+    name: { en: 'Mission Shakti', hi: 'मिशन शक्ति' },
+    tag: { en: "Women's Safety & Empowerment", hi: 'महिला सुरक्षा व सशक्तिकरण' },
+    blurb: {
+      en: 'Women Helpline 181, One Stop Centres, safety from violence, hostels & creches.',
+      hi: 'महिला हेल्पलाइन 181, वन स्टॉप सेंटर, हिंसा से सुरक्षा, हॉस्टल व क्रेच।',
+    },
+  },
+}
+
+export const HELPLINES = [
+  { num: '181', label: { en: 'Women Helpline', hi: 'महिला हेल्पलाइन' }, color: '#b0138e' },
+  { num: '1098', label: { en: 'CHILDLINE (children)', hi: 'चाइल्डलाइन (बच्चे)' }, color: '#f08a24' },
+  { num: '112', label: { en: 'Emergency', hi: 'आपातकाल' }, color: '#d92d20' },
+  { num: '102', label: { en: 'Medical / Ambulance', hi: 'चिकित्सा / एम्बुलेंस' }, color: '#2e9e5b' },
+]
+
+export const T = {
+  appName: { en: 'AI Saheli', hi: 'एआई सहेली' },
+  appSub: { en: 'Ministry of Women & Child Development', hi: 'महिला एवं बाल विकास मंत्रालय' },
+  greetTitle: { en: 'Namaste 🙏', hi: 'नमस्ते 🙏' },
+  greetBody: {
+    en: 'I am your Saheli. Ask me anything about women & child welfare schemes — in your own language.',
+    hi: 'मैं आपकी सहेली हूँ। महिला व बाल कल्याण योजनाओं के बारे में अपनी भाषा में कुछ भी पूछें।',
+  },
+  chooseHelp: { en: 'What do you need help with?', hi: 'आपको किसमें मदद चाहिए?' },
+  helplines: { en: 'Quick helplines', hi: 'तुरंत हेल्पलाइन' },
+  askSaheli: { en: 'Ask Saheli', hi: 'सहेली से पूछें' },
+  tabHome: { en: 'Home', hi: 'होम' },
+  tabChat: { en: 'Chat', hi: 'चैट' },
+  tabDash: { en: 'Ministry', hi: 'मंत्रालय' },
+  inputPlaceholder: { en: 'Type your question…', hi: 'अपना सवाल लिखें…' },
+  listening: { en: 'Listening…', hi: 'सुन रही हूँ…' },
+  suggested: { en: 'Try asking', hi: 'यह पूछकर देखें' },
+  chatIntro: {
+    en: "Hello! I'm AI Saheli 🤝 Ask me about Poshan, Vatsalya or Mission Shakti — in any language. Tap the mic to speak.",
+    hi: 'नमस्ते! मैं एआई सहेली हूँ 🤝 पोषण, वात्सल्य या मिशन शक्ति के बारे में किसी भी भाषा में पूछें। बोलने के लिए माइक दबाएँ।',
+  },
+  // --- Login ---
+  loginTagline: {
+    en: 'Your friendly guide to women & child welfare',
+    hi: 'महिला एवं बाल कल्याण में आपकी मददगार',
+  },
+  roleCitizen: { en: 'Citizen', hi: 'नागरिक' },
+  roleOfficer: { en: 'Ministry / Officer', hi: 'मंत्रालय / अधिकारी' },
+  mobileLabel: { en: 'Mobile number', hi: 'मोबाइल नंबर' },
+  mobilePlaceholder: { en: '10-digit mobile number', hi: '10 अंकों का मोबाइल नंबर' },
+  getOtp: { en: 'Get OTP', hi: 'OTP भेजें' },
+  otpLabel: { en: 'Enter OTP', hi: 'OTP दर्ज करें' },
+  otpPlaceholder: { en: 'Enter the 4-digit OTP', hi: '4 अंकों का OTP दर्ज करें' },
+  verify: { en: 'Verify & Continue', hi: 'सत्यापित कर आगे बढ़ें' },
+  changeNumber: { en: 'Change number', hi: 'नंबर बदलें' },
+  emailLabel: { en: 'Official email', hi: 'आधिकारिक ईमेल' },
+  emailPlaceholder: { en: 'name@gov.in', hi: 'name@gov.in' },
+  passwordLabel: { en: 'Password', hi: 'पासवर्ड' },
+  passwordPlaceholder: { en: 'Enter password', hi: 'पासवर्ड दर्ज करें' },
+  signIn: { en: 'Sign in', hi: 'साइन इन करें' },
+  demoOtpHint: { en: 'Demo: enter any 4 digits (e.g. 1234)', hi: 'डेमो: कोई भी 4 अंक डालें (जैसे 1234)' },
+  demoOfficerHint: { en: 'Demo: any official email & password works', hi: 'डेमो: कोई भी आधिकारिक ईमेल व पासवर्ड चलेगा' },
+  errMobile: { en: 'Please enter a valid 10-digit mobile number.', hi: 'कृपया मान्य 10 अंकों का मोबाइल नंबर डालें।' },
+  errOtp: { en: 'Please enter the 4-digit OTP.', hi: 'कृपया 4 अंकों का OTP डालें।' },
+  errEmail: { en: 'Please enter a valid email address.', hi: 'कृपया मान्य ईमेल पता डालें।' },
+  errPassword: { en: 'Please enter your password.', hi: 'कृपया पासवर्ड डालें।' },
+  otpSentTo: { en: 'OTP sent to', hi: 'OTP भेजा गया' },
+  consent: {
+    en: 'By continuing you agree to use this service for welfare information.',
+    hi: 'आगे बढ़कर आप कल्याण संबंधी जानकारी हेतु इस सेवा के उपयोग से सहमत हैं।',
+  },
+  logout: { en: 'Logout', hi: 'लॉगआउट' },
+
+  dashTitle: { en: 'MoWCD Insights', hi: 'MoWCD इनसाइट्स' },
+  dashSub: {
+    en: 'Real-time view of citizen interactions across schemes',
+    hi: 'योजनाओं में नागरिक संवाद का रीयल-टाइम दृश्य',
+  },
+  poweredLive: { en: 'Powered by Claude', hi: 'Claude द्वारा संचालित' },
+  poweredScripted: { en: 'Demo mode (offline)', hi: 'डेमो मोड (ऑफ़लाइन)' },
+}
+
+export function tr(node, lang) {
+  if (!node) return ''
+  return node[lang] || node.en || ''
+}
