@@ -12,6 +12,21 @@ export async function getDashboard() {
   return r.json()
 }
 
+// Synthesises speech via the backend (Azure neural voice) and returns an
+// object-URL for an <audio> element. Throws if TTS is unavailable (503/502),
+// so callers can fall back to the browser's speechSynthesis.
+export async function synthesizeTTS(text, lang, signal) {
+  const r = await fetch('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, lang }),
+    signal,
+  })
+  if (!r.ok) throw new Error('tts ' + r.status)
+  const blob = await r.blob()
+  return URL.createObjectURL(blob)
+}
+
 // Streams the assistant reply. Calls onChunk(text) as tokens arrive.
 export async function streamChat(messages, onChunk, signal) {
   const r = await fetch('/api/chat', {

@@ -3,6 +3,7 @@ import { getHealth } from './api.js'
 import { T, tr } from './data.js'
 import Home from './components/Home.jsx'
 import Chat from './components/Chat.jsx'
+import Voice from './components/Voice.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import Login from './components/Login.jsx'
 
@@ -48,8 +49,9 @@ export default function App() {
           <>
             <Header lang={lang} setLang={setLang} auth={auth} onLogout={handleLogout} />
             <main className="screen">
-              {tab === 'home' && <Home lang={lang} onAsk={openChat} />}
+              {tab === 'home' && <Home lang={lang} onAsk={openChat} onTalk={() => setTab('voice')} />}
               {tab === 'chat' && <Chat lang={lang} health={health} seed={seed} />}
+              {tab === 'voice' && <Voice lang={lang} />}
               {tab === 'dashboard' && <Dashboard lang={lang} />}
             </main>
             <TabBar lang={lang} tab={tab} setTab={setTab} />
@@ -101,6 +103,7 @@ function TabBar({ lang, tab, setTab }) {
   const items = [
     { id: 'home', icon: '🏠', label: T.tabHome },
     { id: 'chat', icon: '💬', label: T.tabChat },
+    { id: 'voice', icon: '🎙️', label: T.tabVoice },
     { id: 'dashboard', icon: '📊', label: T.tabDash },
   ]
   return (

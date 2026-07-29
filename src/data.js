@@ -59,7 +59,35 @@ export const T = {
   askSaheli: { en: 'Ask Saheli', hi: 'सहेली से पूछें' },
   tabHome: { en: 'Home', hi: 'होम' },
   tabChat: { en: 'Chat', hi: 'चैट' },
+  tabVoice: { en: 'Talk', hi: 'बात करें' },
   tabDash: { en: 'Ministry', hi: 'मंत्रालय' },
+
+  // --- Voice / avatar screen ---
+  voiceName: { en: 'Saheli', hi: 'सहेली' },
+  voiceIntro: {
+    en: 'Namaste! Tap the button and talk to me — I will listen and reply in your language.',
+    hi: 'नमस्ते! बटन दबाकर मुझसे बात करें — मैं सुनूँगी और आपकी भाषा में जवाब दूँगी।',
+  },
+  voiceGreetSpoken: {
+    en: 'Namaste, I am Saheli. How can I help you today?',
+    hi: 'नमस्ते, मैं सहेली हूँ। मैं आपकी क्या मदद कर सकती हूँ?',
+  },
+  vTapToSpeak: { en: 'Tap to speak', hi: 'बोलने के लिए दबाएँ' },
+  vListening: { en: 'Listening…', hi: 'सुन रही हूँ…' },
+  vThinking: { en: 'Thinking…', hi: 'सोच रही हूँ…' },
+  vSpeaking: { en: 'Speaking…', hi: 'बोल रही हूँ…' },
+  vTapToStop: { en: 'Tap to stop', hi: 'रोकने के लिए दबाएँ' },
+  vHandsFree: { en: 'Hands-free', hi: 'हैंड्स-फ़्री' },
+  vYouSaid: { en: 'You said', hi: 'आपने कहा' },
+  vReplay: { en: 'Replay', hi: 'फिर सुनें' },
+  vUnsupported: {
+    en: 'Voice needs Chrome or Edge. You can still use the Chat tab to type.',
+    hi: 'आवाज़ के लिए Chrome या Edge चाहिए। आप चैट टैब में टाइप कर सकती हैं।',
+  },
+  vPrivacy: {
+    en: '🔒 Speech is processed only to answer you.',
+    hi: '🔒 आवाज़ केवल आपको उत्तर देने के लिए उपयोग होती है।',
+  },
   inputPlaceholder: { en: 'Type your question…', hi: 'अपना सवाल लिखें…' },
   listening: { en: 'Listening…', hi: 'सुन रही हूँ…' },
   suggested: { en: 'Try asking', hi: 'यह पूछकर देखें' },
