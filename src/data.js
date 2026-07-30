@@ -80,6 +80,8 @@ export const T = {
   vHandsFree: { en: 'Hands-free', hi: 'हैंड्स-फ़्री' },
   vYouSaid: { en: 'You said', hi: 'आपने कहा' },
   vReplay: { en: 'Replay', hi: 'फिर सुनें' },
+  vAskMore: { en: 'Ask more', hi: 'और पूछें' },
+  vClear: { en: 'Clear', hi: 'साफ़ करें' },
   vUnsupported: {
     en: 'Voice needs Chrome or Edge. You can still use the Chat tab to type.',
     hi: 'आवाज़ के लिए Chrome या Edge चाहिए। आप चैट टैब में टाइप कर सकती हैं।',

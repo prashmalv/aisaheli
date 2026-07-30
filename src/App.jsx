@@ -50,8 +50,8 @@ export default function App() {
             <Header lang={lang} setLang={setLang} auth={auth} onLogout={handleLogout} />
             <main className="screen">
               {tab === 'home' && <Home lang={lang} onAsk={openChat} onTalk={() => setTab('voice')} />}
-              {tab === 'chat' && <Chat lang={lang} health={health} seed={seed} />}
-              {tab === 'voice' && <Voice lang={lang} />}
+              {tab === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} />}
+              {tab === 'voice' && <Voice lang={lang} health={health} userId={auth.id} />}
               {tab === 'dashboard' && <Dashboard lang={lang} />}
             </main>
             <TabBar lang={lang} tab={tab} setTab={setTab} />

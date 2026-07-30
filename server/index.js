@@ -103,7 +103,18 @@ app.get('/api/dashboard', (_req, res) => {
 // Body: { messages: [{ role:'user'|'assistant', content:string }] }
 app.post('/api/chat', async (req, res) => {
   const messages = Array.isArray(req.body?.messages) ? req.body.messages : []
+  const isVoice = req.body?.channel === 'voice'
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || ''
+
+  // Extra guidance for the voice channel: the reply is read aloud by a TTS
+  // voice, so it must be clean spoken text — no markdown symbols, and no
+  // English translations in parentheses after a Hindi term (the TTS would
+  // read the term twice).
+  const VOICE_ADDON =
+    '\n\n## Voice mode (IMPORTANT)\nThis reply will be READ ALOUD by a text-to-speech voice and shown on a small screen. ' +
+    'Write only plain spoken sentences. Do NOT use any markdown or symbols (no *, **, #, -, •, backticks). ' +
+    'Do NOT add an English translation in brackets/parentheses after a term — say each scheme or place name ONCE, in the ' +
+    "user's language, never repeated in another language. Keep it short and natural: 2–4 sentences."
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   res.setHeader('Cache-Control', 'no-cache')
@@ -127,7 +138,10 @@ app.post('/api/chat', async (req, res) => {
       max_tokens: 1024,
       temperature: 0.4,
       stream: true,
-      messages: [{ role: 'system', content: systemPrompt() }, ...history],
+      messages: [
+        { role: 'system', content: systemPrompt() + (isVoice ? VOICE_ADDON : '') },
+        ...history,
+      ],
     })
 
     for await (const chunk of stream) {

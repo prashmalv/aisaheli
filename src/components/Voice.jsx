@@ -1,20 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { streamChat, synthesizeTTS } from '../api.js'
-import { T, tr } from '../data.js'
+import { T, tr, SCHEMES } from '../data.js'
+import { loadConv, saveConv, clearConv } from '../storage.js'
 
-// Strip markdown / bullets so the TTS voice doesn't read out symbols.
-function forSpeech(text) {
+// Strip markdown symbols for clean on-screen display.
+function cleanDisplay(text) {
   return String(text)
-    .replace(/[*#_`>•]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/\*\*/g, '')
+    .replace(/[*_`>#]/g, '')
+    .replace(/^\s*[-•]\s?/gm, '• ')
     .trim()
 }
 
-function getSR() {
-  return window.SpeechRecognition || window.webkitSpeechRecognition
+// For TTS: also drop parenthetical English glosses so a Hindi term isn't read
+// twice (e.g. "मिशन वात्सल्य (Mission Vatsalya)" → "मिशन वात्सल्य").
+function forSpeech(text) {
+  return String(text)
+    .replace(/\([^)]*[A-Za-z][^)]*\)/g, ' ') // remove (English gloss)
+    .replace(/[*#_`>•]/g, ' ')
+    .replace(/\s+([।.,!?])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }
 
-// Pick a natural hi-IN / en-IN voice for the browser fallback.
+const getSR = () => window.SpeechRecognition || window.webkitSpeechRecognition
+
 function pickVoice(lang) {
   const voices = window.speechSynthesis?.getVoices?.() || []
   const want = lang === 'hi' ? 'hi-IN' : 'en-IN'
@@ -23,35 +33,46 @@ function pickVoice(lang) {
     (v) => v.lang === want,
     (v) => v.lang?.startsWith(lang === 'hi' ? 'hi' : 'en'),
   ]
-  for (const p of prefs) {
-    const m = voices.find(p)
-    if (m) return m
-  }
+  for (const p of prefs) { const m = voices.find(p); if (m) return m }
   return null
 }
 
-export default function Voice({ lang }) {
+export default function Voice({ lang, health, userId }) {
+  const [turns, setTurns] = useState(() => loadConv('voice', userId) || [])
   const [status, setStatus] = useState('idle') // idle | listening | thinking | speaking
-  const [transcript, setTranscript] = useState('')
-  const [reply, setReply] = useState('')
   const [handsFree, setHandsFree] = useState(false)
   const supported = Boolean(getSR())
 
   const recRef = useRef(null)
   const audioRef = useRef(null)
-  const historyRef = useRef([])
+  const historyRef = useRef(
+    (loadConv('voice', userId) || []).map((t) => ({
+      role: t.role === 'user' ? 'user' : 'assistant',
+      content: t.text,
+    })),
+  )
   const handsFreeRef = useRef(false)
   const lastReplyRef = useRef('')
   const langRef = useRef(lang)
+  const listRef = useRef(null)
+
   useEffect(() => { langRef.current = lang }, [lang])
   useEffect(() => { handsFreeRef.current = handsFree }, [handsFree])
-
-  // Prime the speech-synthesis voice list (some browsers load it lazily).
+  useEffect(() => { window.speechSynthesis?.getVoices?.(); return () => cleanup() }, []) // eslint-disable-line
   useEffect(() => {
-    window.speechSynthesis?.getVoices?.()
-    return () => cleanup()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (turns.length) saveConv('voice', userId, turns)
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [turns, status, userId])
+
+  // Suggested follow-up questions (from the backend starters).
+  const suggestions = (() => {
+    const s = health?.starters
+    if (!s) return []
+    return Object.keys(SCHEMES)
+      .map((k) => (s[k]?.[0] ? { icon: SCHEMES[k].icon, color: SCHEMES[k].color, text: s[k][0][lang] || s[k][0].en } : null))
+      .filter(Boolean)
+  })()
 
   function cleanup() {
     try { recRef.current?.abort?.() } catch {}
@@ -60,10 +81,7 @@ export default function Voice({ lang }) {
     window.speechSynthesis?.cancel?.()
   }
   function stopAudio() {
-    if (audioRef.current) {
-      try { audioRef.current.pause() } catch {}
-      audioRef.current = null
-    }
+    if (audioRef.current) { try { audioRef.current.pause() } catch {}; audioRef.current = null }
   }
 
   function onSpeakEnd() {
@@ -78,43 +96,55 @@ export default function Voice({ lang }) {
     if (v) u.voice = v
     u.lang = langRef.current === 'hi' ? 'hi-IN' : 'en-IN'
     u.rate = 0.98
+    u.onstart = () => setStatus('speaking') // lip-sync starts with actual audio
     u.onend = onSpeakEnd
     u.onerror = onSpeakEnd
     window.speechSynthesis.speak(u)
   }
 
   async function speak(text) {
-    const clean = forSpeech(text)
+    const spoken = forSpeech(text)
     lastReplyRef.current = text
-    if (!clean) return onSpeakEnd()
-    setStatus('speaking')
+    if (!spoken) return onSpeakEnd()
+    // Keep the "thinking" state while TTS audio is being prepared; only switch
+    // to the speaking (mouth-moving) state once audio actually begins.
     try {
-      const url = await synthesizeTTS(clean, langRef.current)
+      const url = await synthesizeTTS(spoken, langRef.current)
       const audio = new Audio(url)
       audioRef.current = audio
+      audio.onplaying = () => setStatus('speaking')
       audio.onended = () => { URL.revokeObjectURL(url); onSpeakEnd() }
-      audio.onerror = () => { URL.revokeObjectURL(url); browserSpeak(clean) }
+      audio.onerror = () => { URL.revokeObjectURL(url); browserSpeak(spoken) }
       await audio.play()
     } catch {
-      // No Azure TTS (503) or playback blocked → browser voice.
-      browserSpeak(clean)
+      browserSpeak(spoken)
     }
   }
 
-  async function handleUser(text) {
-    const clean = text.trim()
-    if (!clean) return setStatus('idle')
-    setTranscript(clean)
-    setReply('')
+  async function ask(text) {
+    const clean = String(text || '').trim()
+    if (!clean || status === 'thinking') return
+    cleanup()
     setStatus('thinking')
     const history = [...historyRef.current, { role: 'user', content: clean }]
     historyRef.current = history
+    setTurns((t) => [...t, { role: 'user', text: clean }, { role: 'saheli', text: '', pending: true }])
+
     let full = ''
     try {
-      full = await streamChat(history.map((m) => ({ role: m.role, content: m.content })), (f) => setReply(f))
+      full = await streamChat(
+        history.map((m) => ({ role: m.role, content: m.content })),
+        (f) => setTurns((t) => {
+          const copy = [...t]
+          copy[copy.length - 1] = { role: 'saheli', text: cleanDisplay(f) }
+          return copy
+        }),
+        undefined,
+        { channel: 'voice' },
+      )
     } catch {
       full = tr({ en: 'Sorry, I could not respond just now. Please try again.', hi: 'क्षमा करें, अभी उत्तर नहीं दे सकी। कृपया फिर प्रयास करें।' }, langRef.current)
-      setReply(full)
+      setTurns((t) => { const c = [...t]; c[c.length - 1] = { role: 'saheli', text: full }; return c })
     }
     historyRef.current = [...history, { role: 'assistant', content: full }]
     speak(full)
@@ -129,29 +159,19 @@ export default function Voice({ lang }) {
     rec.interimResults = true
     rec.continuous = false
     let latest = ''
-    rec.onresult = (e) => {
-      let text = ''
-      for (const r of e.results) text += r[0].transcript
-      latest = text
-      setTranscript(text.trim())
-    }
+    rec.onresult = (e) => { latest = Array.from(e.results).map((r) => r[0].transcript).join('') }
     rec.onerror = () => { recRef.current = null; setStatus('idle') }
     rec.onend = () => {
       recRef.current = null
       const t = latest.trim()
-      if (t) handleUser(t)
-      else setStatus('idle')
+      if (t) ask(t); else setStatus('idle')
     }
     recRef.current = rec
-    setTranscript('')
-    setReply('')
     setStatus('listening')
     try { rec.start() } catch { setStatus('idle') }
   }
 
-  function stopListening() {
-    try { recRef.current?.stop?.() } catch {}
-  }
+  function stopListening() { try { recRef.current?.stop?.() } catch {} }
 
   function onMainButton() {
     if (!supported) return
@@ -167,8 +187,14 @@ export default function Voice({ lang }) {
     if (next && status === 'idle') startListening()
   }
 
-  function replay() {
-    if (lastReplyRef.current) speak(lastReplyRef.current)
+  function replay() { if (lastReplyRef.current) speak(lastReplyRef.current) }
+
+  function clearHistory() {
+    cleanup()
+    historyRef.current = []
+    setTurns([])
+    clearConv('voice', userId)
+    setStatus('idle')
   }
 
   const statusText = {
@@ -180,51 +206,54 @@ export default function Voice({ lang }) {
 
   return (
     <div className="voice">
-      <div className={`avatar-stage ${status}`}>
-        <span className="avatar-halo" aria-hidden />
-        <div className="avatar-orb">
-          <img className="avatar-img base" src="/ai-saheli-avatar.png" alt="AI Saheli avatar" />
-          <img
-            className={`avatar-img speak ${status === 'speaking' ? 'talking' : ''}`}
-            src="/ai-saheli-avatar-speaking.png"
-            alt=""
-            aria-hidden
-          />
+      <div className="voice-top">
+        <div className={`avatar-stage ${status}`}>
+          <span className="avatar-glow" aria-hidden />
+          <div className="avatar-orb">
+            <img className="avatar-img base" src="/ai-saheli-avatar.png" alt="AI Saheli avatar" />
+            <img className={`avatar-img speak ${status === 'speaking' ? 'talking' : ''}`} src="/ai-saheli-avatar-speaking.png" alt="" aria-hidden />
+          </div>
         </div>
+        <div className="voice-meta">
+          <div className="voice-name">{tr(T.voiceName, lang)}</div>
+          <div className={`voice-status s-${status}`}>{statusText}</div>
+        </div>
+        {turns.length > 0 && (
+          <button className="voice-clear" onClick={clearHistory} title={tr(T.vClear, lang)} aria-label={tr(T.vClear, lang)}>🗑</button>
+        )}
       </div>
 
-      <div className="voice-name">{tr(T.voiceName, lang)}</div>
-      <div className={`voice-status s-${status}`}>{statusText}</div>
-
-      <div className="voice-transcript">
-        {transcript && (
-          <p className="v-said"><b>{tr(T.vYouSaid, lang)}:</b> {transcript}</p>
+      <div className="voice-thread" ref={listRef}>
+        {turns.length === 0 && (
+          <div className="v-intro">{tr(T.voiceIntro, lang)}</div>
         )}
-        <p className="v-reply">{reply || tr(T.voiceIntro, lang)}</p>
+        {turns.map((t, i) => (
+          <div key={i} className={`v-turn ${t.role}`}>
+            {t.role === 'saheli' && t.pending && !t.text ? <span className="v-typing"><span /><span /><span /></span> : t.text}
+          </div>
+        ))}
+
+        {status === 'idle' && suggestions.length > 0 && (
+          <div className="v-suggest">
+            <div className="v-suggest-label">{tr(T.vAskMore, lang)}</div>
+            {suggestions.map((s, i) => (
+              <button key={i} className="v-chip" style={{ '--c': s.color }} onClick={() => ask(s.text)}>
+                <span aria-hidden>{s.icon}</span> {s.text}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {!supported && <p className="v-unsupported">{tr(T.vUnsupported, lang)}</p>}
 
-      <div className="voice-controls">
-        <button
-          className={`mic-big ${status}`}
-          onClick={onMainButton}
-          disabled={!supported || status === 'thinking'}
-          aria-label={statusText}
-        >
+      <div className="voice-dock">
+        <button className={`chip-btn ${handsFree ? 'on' : ''}`} onClick={toggleHandsFree} disabled={!supported}>🔁 {tr(T.vHandsFree, lang)}</button>
+        <button className={`mic-big ${status}`} onClick={onMainButton} disabled={!supported || status === 'thinking'} aria-label={statusText}>
           {status === 'listening' ? '⏹' : status === 'speaking' ? '⏸' : '🎤'}
         </button>
+        <button className="chip-btn" onClick={replay} disabled={!lastReplyRef.current}>🔊 {tr(T.vReplay, lang)}</button>
       </div>
-
-      <div className="voice-actions">
-        <button className={`chip-btn ${handsFree ? 'on' : ''}`} onClick={toggleHandsFree} disabled={!supported}>
-          🔁 {tr(T.vHandsFree, lang)}
-        </button>
-        <button className="chip-btn" onClick={replay} disabled={!lastReplyRef.current}>
-          🔊 {tr(T.vReplay, lang)}
-        </button>
-      </div>
-
       <p className="voice-privacy">{tr(T.vPrivacy, lang)}</p>
     </div>
   )

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { streamChat } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
+import { loadConv, saveConv } from '../storage.js'
 
-export default function Chat({ lang, health, seed }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: tr(T.chatIntro, lang) },
-  ])
+export default function Chat({ lang, health, seed, userId }) {
+  const [messages, setMessages] = useState(() => {
+    const saved = loadConv('chat', userId)
+    return saved && saved.length ? saved : [{ role: 'assistant', content: tr(T.chatIntro, lang) }]
+  })
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [listening, setListening] = useState(false)
@@ -21,6 +23,11 @@ export default function Chat({ lang, health, seed }) {
     const el = listRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [messages, busy])
+
+  // Persist this user's conversation so it's restored on next login.
+  useEffect(() => {
+    if (!busy && messages.length > 1) saveConv('chat', userId, messages)
+  }, [messages, busy, userId])
 
   // Send a seeded question coming from the Home screen scheme cards.
   useEffect(() => {

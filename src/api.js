@@ -28,11 +28,12 @@ export async function synthesizeTTS(text, lang, signal) {
 }
 
 // Streams the assistant reply. Calls onChunk(text) as tokens arrive.
-export async function streamChat(messages, onChunk, signal) {
+// opts.channel = 'voice' asks the backend for a TTS-friendly reply.
+export async function streamChat(messages, onChunk, signal, opts = {}) {
   const r = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, channel: opts.channel || 'text' }),
     signal,
   })
   if (!r.ok || !r.body) throw new Error('chat failed')
