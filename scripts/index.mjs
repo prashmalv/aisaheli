@@ -74,11 +74,15 @@ function toB64(vec) {
 // --- Freshness helpers ------------------------------------------------------
 const THIS_YEAR = 2026
 
-// Best-effort publication year from url/title/leading text (2015–2026).
+// Best-effort publication year. Filename and title years are AUTHORITATIVE
+// (matched even when glued to text, e.g. "…scheme2022.pdf" → 2022); only if
+// none is found there do we fall back to a boundary-matched year in the body.
 function extractYear(d) {
-  const hay = `${d.url} ${d.title} ${(d.text || '').slice(0, 500)}`
-  const yrs = [...hay.matchAll(/\b(20(?:1[5-9]|2[0-6]))\b/g)].map((m) => Number(m[1]))
-  return yrs.length ? Math.max(...yrs) : null
+  const fname = String(d.url || '').split('/').pop() || ''
+  const nameYears = [...`${fname} ${d.title || ''}`.matchAll(/(20(?:1[5-9]|2[0-6]))/g)].map((m) => Number(m[1]))
+  if (nameYears.length) return Math.max(...nameYears)
+  const bodyYears = [...String(d.text || '').slice(0, 500).matchAll(/\b(20(?:1[5-9]|2[0-6]))\b/g)].map((m) => Number(m[1]))
+  return bodyYears.length ? Math.max(...bodyYears) : null
 }
 function docType(d) {
   const s = `${d.url} ${d.title}`.toLowerCase()
