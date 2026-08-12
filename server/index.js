@@ -4,9 +4,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
 import OpenAI from 'openai'
-import { systemPrompt, STARTERS } from './knowledge.js'
+import { systemPrompt, groundedSystemPrompt, STARTERS } from './knowledge.js'
 import { scriptedReply } from './fallback.js'
 import { dashboardData } from './dashboard.js'
+import { retrieve, buildContext, ragStatus } from './retriever.js'
+
+// Delimiter that separates the streamed answer text from the trailing citations
+// JSON. A U+001F unit separator never appears in normal model output.
+const CITE_SEP = String.fromCharCode(31) // U+001F unit separator
+const RAG_MIN_SCORE = 0.28
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
@@ -53,6 +59,7 @@ app.get('/api/health', (_req, res) => {
     mode: hasKey ? 'live' : 'scripted',
     model: hasKey ? DEPLOYMENT : null,
     voice: speechEnabled,
+    rag: ragStatus(),
     starters: STARTERS,
   })
 })
@@ -127,27 +134,49 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
+    const state = ['delhi', 'national', 'rajasthan', 'up'].includes(req.body?.state) ? req.body.state : 'all'
     const history = messages
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => ({ role: m.role, content: String(m.content || '') }))
     // Drop any leading assistant (UI greeting) so the turn starts cleanly.
     while (history.length && history[0].role === 'assistant') history.shift()
 
+    // Ground the answer in the crawled official WCD sources (RAG). Falls back to
+    // the baked knowledge prompt only if the index hasn't been built yet.
+    let citations = []
+    let systemContent
+    const rag = ragStatus()
+    if (rag.ready && lastUser.trim()) {
+      let ctx = ''
+      try {
+        const { chunks, maxScore } = await retrieve(lastUser, state, 6)
+        if (maxScore >= RAG_MIN_SCORE) {
+          const built = buildContext(chunks)
+          ctx = built.context
+          citations = built.citations
+        }
+      } catch (e) {
+        console.error('[chat] retrieval failed:', e.message)
+      }
+      systemContent = groundedSystemPrompt(ctx, { channel: isVoice ? 'voice' : 'text', state })
+    } else {
+      systemContent = systemPrompt() + (isVoice ? VOICE_ADDON : '')
+    }
+
     const stream = await client.chat.completions.create({
       model: DEPLOYMENT,
       max_tokens: 1024,
-      temperature: 0.4,
+      temperature: 0.3,
       stream: true,
-      messages: [
-        { role: 'system', content: systemPrompt() + (isVoice ? VOICE_ADDON : '') },
-        ...history,
-      ],
+      messages: [{ role: 'system', content: systemContent }, ...history],
     })
 
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content
       if (delta) res.write(delta)
     }
+    // Trailing citations block, split out by the frontend.
+    res.write(CITE_SEP + JSON.stringify({ citations, state, grounded: citations.length > 0 }))
     res.end()
   } catch (err) {
     console.error('[chat] Azure OpenAI error — using scripted fallback:', err.message)

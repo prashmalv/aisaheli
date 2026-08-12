@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { streamChat, synthesizeTTS } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
 import { loadConv, saveConv, clearConv } from '../storage.js'
+import { Citations } from './Chat.jsx'
 
 // Strip markdown symbols for clean on-screen display.
 function cleanDisplay(text) {
@@ -37,7 +38,7 @@ function pickVoice(lang) {
   return null
 }
 
-export default function Voice({ lang, health, userId }) {
+export default function Voice({ lang, health, userId, loc }) {
   const [turns, setTurns] = useState(() => loadConv('voice', userId) || [])
   const [status, setStatus] = useState('idle') // idle | listening | thinking | speaking
   const [handsFree, setHandsFree] = useState(false)
@@ -131,8 +132,9 @@ export default function Voice({ lang, health, userId }) {
     setTurns((t) => [...t, { role: 'user', text: clean }, { role: 'saheli', text: '', pending: true }])
 
     let full = ''
+    let citations = []
     try {
-      full = await streamChat(
+      const res = await streamChat(
         history.map((m) => ({ role: m.role, content: m.content })),
         (f) => setTurns((t) => {
           const copy = [...t]
@@ -140,12 +142,14 @@ export default function Voice({ lang, health, userId }) {
           return copy
         }),
         undefined,
-        { channel: 'voice' },
+        { channel: 'voice', state: loc || 'all' },
       )
+      full = res.text || ''
+      citations = res.citations || []
     } catch {
       full = tr({ en: 'Sorry, I could not respond just now. Please try again.', hi: 'क्षमा करें, अभी उत्तर नहीं दे सकी। कृपया फिर प्रयास करें।' }, langRef.current)
-      setTurns((t) => { const c = [...t]; c[c.length - 1] = { role: 'saheli', text: full }; return c })
     }
+    setTurns((t) => { const c = [...t]; c[c.length - 1] = { role: 'saheli', text: cleanDisplay(full) || c[c.length - 1].text, citations }; return c })
     historyRef.current = [...history, { role: 'assistant', content: full }]
     speak(full)
   }
@@ -230,6 +234,7 @@ export default function Voice({ lang, health, userId }) {
         {turns.map((t, i) => (
           <div key={i} className={`v-turn ${t.role}`}>
             {t.role === 'saheli' && t.pending && !t.text ? <span className="v-typing"><span /><span /><span /></span> : t.text}
+            {t.role === 'saheli' && t.citations && <Citations items={t.citations} lang={lang} />}
           </div>
         ))}
 

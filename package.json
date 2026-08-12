@@ -10,7 +10,10 @@
     "dev:web": "vite",
     "build": "vite build",
     "start": "node server/index.js",
-    "serve": "npm run build && npm start"
+    "serve": "npm run build && npm start",
+    "crawl": "node scripts/crawl.mjs",
+    "index": "node scripts/index.mjs",
+    "kb": "npm run crawl && npm run index"
   },
   "dependencies": {
     "dotenv": "^17.0.0",
@@ -23,6 +26,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.1.0",
     "cross-env": "^10.0.0",
+    "pdf-parse": "^1.1.1",
     "vite": "^7.0.0"
   }
 }

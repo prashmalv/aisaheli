@@ -27,26 +27,35 @@ export async function synthesizeTTS(text, lang, signal) {
   return URL.createObjectURL(blob)
 }
 
-// Streams the assistant reply. Calls onChunk(text) as tokens arrive.
-// opts.channel = 'voice' asks the backend for a TTS-friendly reply.
+// U+001F separates the streamed answer from the trailing citations JSON.
+const CITE_SEP = String.fromCharCode(31)
+
+// Streams the assistant reply. Calls onChunk(text) as tokens arrive (answer
+// text only — citations are stripped out). Returns { text, citations, grounded, state }.
+// opts.channel = 'voice' asks for a TTS-friendly reply; opts.state scopes RAG.
 export async function streamChat(messages, onChunk, signal, opts = {}) {
   const r = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, channel: opts.channel || 'text' }),
+    body: JSON.stringify({ messages, channel: opts.channel || 'text', state: opts.state || 'all' }),
     signal,
   })
   if (!r.ok || !r.body) throw new Error('chat failed')
 
   const reader = r.body.getReader()
   const decoder = new TextDecoder()
-  let full = ''
+  let raw = ''
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
-    const chunk = decoder.decode(value, { stream: true })
-    full += chunk
-    onChunk(full)
+    raw += decoder.decode(value, { stream: true })
+    const text = raw.split(CITE_SEP)[0]
+    onChunk(text)
   }
-  return full
+  const [text, meta] = raw.split(CITE_SEP)
+  let citations = [], grounded = false, state = opts.state || 'all'
+  if (meta) {
+    try { const j = JSON.parse(meta); citations = j.citations || []; grounded = !!j.grounded; state = j.state || state } catch {}
+  }
+  return { text: text || '', citations, grounded, state }
 }

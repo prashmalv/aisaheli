@@ -11,9 +11,26 @@ It has two faces:
 1. **Citizen app** — a multilingual (Hindi / English), voice-and-text chat assistant with scheme cards and quick helplines, designed to feel like a real phone app.
 2. **Ministry dashboard** — an analytics view of citizen interactions (top questions, regional hotspots, language mix, emerging concerns).
 
-The assistant is powered by **Azure OpenAI (gpt-4o-mini)**. If no key/endpoint is configured it automatically falls back to curated scripted answers, so the demo always works in front of an audience.
+The assistant is powered by **Azure OpenAI (gpt-4o-mini)** and answers **strictly from official WCD sources** — pages and PDFs crawled from government WCD websites — with **citations** so every answer is verifiable. If the index isn't built it falls back to a baked knowledge prompt; if no key is configured it falls back to curated scripted answers.
 
 **Live demo:** https://ai-saheli-egov-poc.azurewebsites.net
+
+## Grounded knowledge base (RAG)
+
+Answers are retrieved from a vector index built by crawling **only official WCD sites** and the documents linked from them:
+
+- `wcd.gov.in` (National / MoWCD), `wcd.delhi.gov.in` (Delhi), `balvikasup.gov.in` (ICDS Uttar Pradesh) — add more subdomains in `scripts/crawl.mjs`.
+- HTML pages are restricted to those WCD hosts; PDFs linked from them (guides, forms, FAQs) are parsed too.
+- Each answer shows the exact source page/PDF links (citations) and can be scoped by the citizen's **location** (All India / Delhi / UP).
+
+Rebuild the knowledge base whenever the source sites change:
+
+```bash
+# crawl WCD sites + PDFs → data/corpus.json, then embed → data/index.json
+AZURE_OPENAI_API_KEY=... AZURE_OPENAI_ENDPOINT=https://<res>.openai.azure.com/openai/v1 npm run kb
+```
+
+`data/` is gitignored (regenerable) but IS included in the Azure deploy zip so the server can retrieve at runtime. Query embeddings use the `text-embedding-3-small` deployment; retrieval + generation run in `server/retriever.js` + `server/index.js`.
 
 ---
 

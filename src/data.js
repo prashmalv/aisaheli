@@ -138,6 +138,20 @@ export const T = {
   poweredScripted: { en: 'Demo mode (offline)', hi: 'डेमो मोड (ऑफ़लाइन)' },
 }
 
+// Location scopes for grounded retrieval (matches backend state codes).
+export const LOCATIONS = [
+  { code: 'all', en: 'All India', hi: 'पूरा भारत' },
+  { code: 'delhi', en: 'Delhi', hi: 'दिल्ली' },
+  { code: 'up', en: 'Uttar Pradesh', hi: 'उत्तर प्रदेश' },
+]
+
+Object.assign(T, {
+  locLabel: { en: 'Location', hi: 'स्थान' },
+  sourcesLabel: { en: 'Sources', hi: 'स्रोत' },
+  verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
+  verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
+})
+
 export function tr(node, lang) {
   if (!node) return ''
   return node[lang] || node.en || ''

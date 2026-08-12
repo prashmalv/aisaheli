@@ -3,7 +3,7 @@ import { streamChat } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
 import { loadConv, saveConv } from '../storage.js'
 
-export default function Chat({ lang, health, seed, userId }) {
+export default function Chat({ lang, health, seed, userId, loc }) {
   const [messages, setMessages] = useState(() => {
     const saved = loadConv('chat', userId)
     return saved && saved.length ? saved : [{ role: 'assistant', content: tr(T.chatIntro, lang) }]
@@ -49,7 +49,7 @@ export default function Chat({ lang, health, seed, userId }) {
     setBusy(true)
 
     try {
-      await streamChat(
+      const res = await streamChat(
         next.map(({ role, content }) => ({ role, content })),
         (full) => {
           setMessages((cur) => {
@@ -58,7 +58,14 @@ export default function Chat({ lang, health, seed, userId }) {
             return copy
           })
         },
+        undefined,
+        { channel: 'text', state: loc || 'all' },
       )
+      setMessages((cur) => {
+        const copy = [...cur]
+        copy[copy.length - 1] = { role: 'assistant', content: res.text || copy[copy.length - 1].content, citations: res.citations }
+        return copy
+      })
     } catch {
       setMessages((cur) => {
         const copy = [...cur]
@@ -108,7 +115,7 @@ export default function Chat({ lang, health, seed, userId }) {
     <div className="chat">
       <div className="chat-list" ref={listRef}>
         {messages.map((m, i) => (
-          <Bubble key={i} role={m.role} content={m.content} pending={m.pending && !m.content} lang={lang} />
+          <Bubble key={i} role={m.role} content={m.content} citations={m.citations} pending={m.pending && !m.content} lang={lang} />
         ))}
 
         {showStarters && starters && (
@@ -150,14 +157,36 @@ export default function Chat({ lang, health, seed, userId }) {
   )
 }
 
-function Bubble({ role, content, pending, lang }) {
+function Bubble({ role, content, citations, pending, lang }) {
   const isUser = role === 'user'
   return (
     <div className={`bubble-row ${isUser ? 'user' : 'bot'}`}>
       {!isUser && <div className="bot-avatar" aria-hidden>🤝</div>}
       <div className={`bubble ${isUser ? 'user' : 'bot'}`}>
         {pending ? <Typing /> : <Rich text={content} />}
+        {!isUser && <Citations items={citations} lang={lang} />}
       </div>
+    </div>
+  )
+}
+
+// Verifiable sources under an answer — links to the exact WCD page/PDF.
+export function Citations({ items, lang }) {
+  if (!items || !items.length) return null
+  const host = (u) => { try { return new URL(u).host } catch { return u } }
+  return (
+    <div className="cites">
+      <div className="cites-title">📎 {tr(T.sourcesLabel, lang)}</div>
+      {items.map((c) => (
+        <a key={c.n} className="cite" href={c.url} target="_blank" rel="noreferrer">
+          <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
+          <span className="cite-text">
+            <span className="cite-title">{c.title}</span>
+            <span className="cite-host">{host(c.url)}</span>
+          </span>
+          <span className="cite-go" aria-hidden>↗</span>
+        </a>
+      ))}
     </div>
   )
 }

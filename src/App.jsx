@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getHealth } from './api.js'
-import { T, tr } from './data.js'
+import { T, tr, LOCATIONS } from './data.js'
 import Home from './components/Home.jsx'
 import Chat from './components/Chat.jsx'
 import Voice from './components/Voice.jsx'
@@ -14,9 +14,12 @@ export default function App() {
   const [tab, setTab] = useState('home')
   const [health, setHealth] = useState(null)
   const [seed, setSeed] = useState(null) // a question to seed the chat with
+  const [loc, setLoc] = useState(() => localStorage.getItem('saheli_loc') || 'delhi')
   const [auth, setAuth] = useState(() => {
     try { return JSON.parse(localStorage.getItem(AUTH_KEY)) } catch { return null }
   })
+
+  useEffect(() => { try { localStorage.setItem('saheli_loc', loc) } catch {} }, [loc])
 
   useEffect(() => {
     getHealth().then(setHealth).catch(() => setHealth({ mode: 'scripted' }))
@@ -48,10 +51,11 @@ export default function App() {
         ) : (
           <>
             <Header lang={lang} setLang={setLang} auth={auth} onLogout={handleLogout} />
+            {tab !== 'dashboard' && <LocationBar lang={lang} loc={loc} setLoc={setLoc} />}
             <main className="screen">
               {tab === 'home' && <Home lang={lang} onAsk={openChat} onTalk={() => setTab('voice')} />}
-              {tab === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} />}
-              {tab === 'voice' && <Voice lang={lang} health={health} userId={auth.id} />}
+              {tab === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} />}
+              {tab === 'voice' && <Voice lang={lang} health={health} userId={auth.id} loc={loc} />}
               {tab === 'dashboard' && <Dashboard lang={lang} />}
             </main>
             <TabBar lang={lang} tab={tab} setTab={setTab} />
@@ -96,6 +100,24 @@ function Header({ lang, setLang, auth, onLogout }) {
         </button>
       </div>
     </header>
+  )
+}
+
+function LocationBar({ lang, loc, setLoc }) {
+  return (
+    <div className="locbar">
+      <label className="locbar-loc">
+        <span aria-hidden>📍</span>
+        <select value={loc} onChange={(e) => setLoc(e.target.value)} aria-label={tr(T.locLabel, lang)}>
+          {LOCATIONS.map((l) => (
+            <option key={l.code} value={l.code}>{tr(l, lang)}</option>
+          ))}
+        </select>
+      </label>
+      <span className="locbar-badge" title={tr(T.verifiedBadge, lang)}>
+        ✅ {tr(T.verifiedBadge, lang)}
+      </span>
+    </div>
   )
 }
 
