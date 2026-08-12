@@ -13,6 +13,7 @@ const INDEX_PATH = path.join(__dirname, '..', 'data', 'index.json')
 const ENDPOINT = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/+$/, '')
 const KEY = process.env.AZURE_OPENAI_API_KEY || ''
 const EMBED_MODEL = process.env.EMBED_DEPLOYMENT || 'text-embedding-3-small'
+const THIS_YEAR = new Date().getFullYear()
 
 let INDEX = null // { model, dim, chunks: [{url,title,state,site,type,text, vec:Float32Array, norm}] }
 
@@ -78,6 +79,11 @@ export async function retrieve(query, state = 'all', k = 6) {
     let score = dot / (c.norm * qn)
     // Small preference for the exact selected state over national.
     if (useState && c.state === state) score += 0.02
+    // Freshness: annual reports are narrative/statistical — poor sources for
+    // eligibility/assistance answers — so down-rank them; and gently prefer
+    // more recent documents so relevance ties break toward the latest.
+    if (c.docType === 'annual_report') score -= 0.06
+    if (c.year) score -= Math.min(0.04, 0.012 * Math.max(0, THIS_YEAR - c.year))
     scored.push({ c, score })
   }
   scored.sort((a, b) => b.score - a.score)
@@ -92,9 +98,10 @@ export function buildContext(chunks) {
   const blocks = chunks.map((c, i) => {
     if (!seen.has(c.url)) {
       seen.add(c.url)
-      citations.push({ n: citations.length + 1, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type })
+      citations.push({ n: citations.length + 1, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type, year: c.year || null })
     }
-    return `[Source ${i + 1}] ${c.site} — ${c.title}\nURL: ${c.url}\n${c.text}`
+    const yr = c.year ? ` (published ${c.year})` : ''
+    return `[Source ${i + 1}] ${c.site}${yr} — ${c.title}\nURL: ${c.url}\n${c.text}`
   })
   return { context: blocks.join('\n\n---\n\n'), citations: citations.slice(0, 4) }
 }

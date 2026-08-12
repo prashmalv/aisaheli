@@ -182,7 +182,7 @@ export function Citations({ items, lang }) {
           <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
           <span className="cite-text">
             <span className="cite-title">{c.title}</span>
-            <span className="cite-host">{host(c.url)}</span>
+            <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
           </span>
           <span className="cite-go" aria-hidden>↗</span>
         </a>
