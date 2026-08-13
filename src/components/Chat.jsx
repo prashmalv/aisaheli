@@ -3,7 +3,7 @@ import { streamChat } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
 import { loadConv, saveConv } from '../storage.js'
 
-export default function Chat({ lang, health, seed, userId, loc }) {
+export default function Chat({ lang, health, seed, userId, loc, scheme, showCitations = false, role = 'citizen' }) {
   const [messages, setMessages] = useState(() => {
     const saved = loadConv('chat', userId)
     return saved && saved.length ? saved : [{ role: 'assistant', content: tr(T.chatIntro, lang) }]
@@ -59,7 +59,7 @@ export default function Chat({ lang, health, seed, userId, loc }) {
           })
         },
         undefined,
-        { channel: 'text', state: loc || 'all' },
+        { channel: 'text', state: loc || 'all', scheme: scheme || null, role, userId },
       )
       setMessages((cur) => {
         const copy = [...cur]
@@ -115,7 +115,7 @@ export default function Chat({ lang, health, seed, userId, loc }) {
     <div className="chat">
       <div className="chat-list" ref={listRef}>
         {messages.map((m, i) => (
-          <Bubble key={i} role={m.role} content={m.content} citations={m.citations} pending={m.pending && !m.content} lang={lang} />
+          <Bubble key={i} role={m.role} content={m.content} citations={showCitations ? m.citations : null} pending={m.pending && !m.content} lang={lang} />
         ))}
 
         {showStarters && starters && (

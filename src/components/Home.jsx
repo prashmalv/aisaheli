@@ -1,6 +1,6 @@
 import { SCHEMES, HELPLINES, T, tr } from '../data.js'
 
-export default function Home({ lang, onAsk, onTalk }) {
+export default function Home({ lang, onScheme, onTalk }) {
   return (
     <div className="home">
       <section className="hero">
@@ -9,7 +9,7 @@ export default function Home({ lang, onAsk, onTalk }) {
         <h1 className="hero-title">{tr(T.greetTitle, lang)}</h1>
         <p className="hero-body">{tr(T.greetBody, lang)}</p>
         <div className="hero-ctas">
-          <button className="cta" onClick={() => onAsk('')}>
+          <button className="cta" onClick={() => onScheme(null)}>
             💬 {tr(T.askSaheli, lang)}
           </button>
           <button className="cta cta-voice" onClick={() => onTalk?.()}>
@@ -26,7 +26,7 @@ export default function Home({ lang, onAsk, onTalk }) {
               key={s.id}
               className="scheme-card"
               style={{ '--c': s.color, '--tint': s.tint }}
-              onClick={() => onAsk(tr(SCHEMES[s.id].name, lang))}
+              onClick={() => onScheme(s.id)}
             >
               <span className="scheme-icon" aria-hidden>{s.icon}</span>
               <span className="scheme-text">

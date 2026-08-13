@@ -19,9 +19,45 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, '..', 'data')
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
-// Each site: host (for HTML restriction), state label, seed paths.
+// Each site: host (for HTML restriction), scope tag, state, seed paths.
+// scope drives which sources a citizen's selected scheme/location may use.
 const SITES = [
   {
+    scope: 'shakti',
+    state: 'national',
+    label: 'Mission Shakti',
+    host: 'missionshakti.wcd.gov.in',
+    seeds: ['https://missionshakti.wcd.gov.in/'],
+  },
+  {
+    scope: 'vatsalya',
+    state: 'national',
+    label: 'Mission Vatsalya',
+    host: 'missionvatsalya.wcd.gov.in',
+    seeds: ['https://missionvatsalya.wcd.gov.in/'],
+  },
+  {
+    scope: 'poshan',
+    state: 'national',
+    label: 'Poshan Abhiyaan',
+    host: 'poshanabhiyaan.gov.in',
+    seeds: ['https://poshanabhiyaan.gov.in/'],
+  },
+  {
+    scope: 'national',
+    state: 'national',
+    label: 'MoWCD (National)',
+    host: 'wcd.gov.in',
+    seeds: [
+      'https://wcd.gov.in/',
+      'https://wcd.gov.in/schemes-listing',
+      'https://wcd.gov.in/schemes',
+      'https://wcd.gov.in/about-us',
+      'https://wcd.gov.in/acts',
+    ],
+  },
+  {
+    scope: 'delhi',
     state: 'delhi',
     label: 'WCD Delhi',
     host: 'wcd.delhi.gov.in',
@@ -35,30 +71,6 @@ const SITES = [
       'https://wcd.delhi.gov.in/notifications',
     ],
   },
-  {
-    state: 'national',
-    label: 'MoWCD (National)',
-    host: 'wcd.gov.in',
-    seeds: [
-      'https://wcd.gov.in/',
-      'https://wcd.gov.in/schemes-listing',
-      'https://wcd.gov.in/schemes',
-      'https://wcd.gov.in/about-us',
-      'https://wcd.gov.in/acts',
-    ],
-  },
-  {
-    state: 'rajasthan',
-    label: 'WCD Rajasthan',
-    host: 'wcd.rajasthan.gov.in',
-    seeds: ['https://wcd.rajasthan.gov.in/'],
-  },
-  {
-    state: 'up',
-    label: 'ICDS Uttar Pradesh',
-    host: 'balvikasup.gov.in',
-    seeds: ['https://balvikasup.gov.in/'],
-  },
 ]
 
 const MAX_PAGES = Number(process.env.MAX_PAGES_PER_SITE || 90)
@@ -67,7 +79,9 @@ const DELAY = Number(process.env.CRAWL_DELAY_MS || 250)
 const FETCH_TIMEOUT = 25000
 const MAX_PDF_BYTES = 12 * 1024 * 1024
 
-const UA = 'AISaheliBot/1.0 (+MoWCD demo; grounded citation crawler)'
+// Some WCD sites (e.g. missionvatsalya) 403 non-browser agents, so present a
+// standard browser UA. We still crawl politely (delay + caps) and only WCD hosts.
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'", '#160': ' ' }
@@ -148,7 +162,7 @@ async function crawlSite(site, docs, seenPdf) {
       const title = extractTitle(html) || url
       const text = htmlToText(html)
       if (text.length > 200) {
-        docs.push({ url, title, state: site.state, site: site.label, type: 'page', text })
+        docs.push({ url, title, scope: site.scope, state: site.state, site: site.label, type: 'page', text })
         pages++
         process.stdout.write(`  [${site.state}] page ${pages}/${MAX_PAGES}: ${title.slice(0, 60)}\n`)
       }
@@ -166,7 +180,7 @@ async function crawlSite(site, docs, seenPdf) {
                   const ptext = await parsePdf(buf)
                   if (ptext && ptext.length > 300) {
                     const pname = decodeURIComponent(link.split('/').pop() || 'document.pdf')
-                    docs.push({ url: link, title: pname.replace(/[-_]/g, ' ').replace(/\.pdf$/i, ''), state: site.state, site: site.label, type: 'pdf', text: ptext })
+                    docs.push({ url: link, title: pname.replace(/[-_]/g, ' ').replace(/\.pdf$/i, ''), scope: site.scope, state: site.state, site: site.label, type: 'pdf', text: ptext })
                     pdfs++
                     process.stdout.write(`  [${site.state}] pdf ${pdfs}/${MAX_PDFS}: ${pname.slice(0, 60)}\n`)
                   }

@@ -592,3 +592,49 @@ ul { list-style: none; }
 .cite-host { font-size: 10px; color: var(--magenta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cite-go { margin-left: auto; color: var(--muted); flex: none; font-size: 13px; }
 .v-turn.saheli .cites { border-top-color: rgba(0,0,0,0.08); }
+
+/* ---- Context bar (scheme + location scope) ---- */
+.ctxbar {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: #fbf3f9; border-bottom: 1px solid var(--line);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.ctxbar::-webkit-scrollbar { height: 0; }
+.ctx-schemes { display: flex; gap: 6px; flex: 1; min-width: 0; }
+.ctx-chip {
+  white-space: nowrap; font-size: 11.5px; font-weight: 700; color: var(--muted);
+  background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.ctx-chip.on { color: #fff; background: var(--c, var(--magenta)); border-color: transparent; }
+.ctx-loc { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+.ctx-loc select { font-family: inherit; font-size: 11.5px; font-weight: 700; color: var(--ink); border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 5px 6px; }
+
+/* ---- Admin (government) console: wider layout ---- */
+.admin-tag {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.06em; vertical-align: middle;
+  background: rgba(255,255,255,0.22); color: #fff; padding: 2px 6px; border-radius: 6px; margin-left: 8px;
+}
+@media (min-width: 480px) {
+  .device.device-admin { max-width: 1040px; height: min(940px, calc(100dvh - 48px)); }
+}
+.device-admin .bubble { max-width: 92%; }
+
+/* ---- Audit ---- */
+.audit { padding: 16px 14px 26px; }
+.audit-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.audit-head h1 { font-size: 19px; font-weight: 800; }
+.audit-head p { font-size: 12.5px; color: var(--muted); margin-top: 3px; max-width: 60ch; }
+.audit-refresh { flex: none; width: 36px; height: 36px; border-radius: 10px; background: #fff; border: 1px solid var(--line); font-size: 18px; color: var(--magenta); box-shadow: var(--shadow); }
+.audit-empty { color: var(--muted); font-size: 13px; padding: 24px 4px; text-align: center; }
+.audit-list { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+.audit-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 13px; box-shadow: var(--shadow); }
+.audit-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10.5px; margin-bottom: 8px; }
+.audit-time { color: var(--muted); font-weight: 600; }
+.audit-role { font-weight: 700; background: var(--bg); padding: 2px 7px; border-radius: 999px; }
+.audit-role.r-officer { background: #e8f0fe; color: #1d5fd6; }
+.audit-scheme { font-weight: 700; color: #fff; background: var(--c); padding: 2px 8px; border-radius: 999px; }
+.audit-loc, .audit-ch { color: var(--muted); font-weight: 600; }
+.audit-q { font-size: 13px; line-height: 1.45; margin-bottom: 5px; }
+.audit-a { font-size: 13px; line-height: 1.5; color: #333; background: var(--bg); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; white-space: pre-wrap; }
+.audit-nocite { font-size: 11.5px; color: #b76a11; background: #fff7e0; border: 1px solid #ffe6a3; padding: 7px 10px; border-radius: 10px; margin-top: 8px; }

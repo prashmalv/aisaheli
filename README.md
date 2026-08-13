@@ -17,11 +17,23 @@ The assistant is powered by **Azure OpenAI (gpt-4o-mini)** and answers **strictl
 
 ## Grounded knowledge base (RAG)
 
-Answers are retrieved from a vector index built by crawling **only official WCD sites** and the documents linked from them:
+Answers are retrieved from a vector index built by crawling **only official WCD sites** and the documents linked from them. Retrieval is **scoped by the scheme the citizen selects and by location**:
 
-- `wcd.gov.in` (National / MoWCD), `wcd.delhi.gov.in` (Delhi), `balvikasup.gov.in` (ICDS Uttar Pradesh) — add more subdomains in `scripts/crawl.mjs`.
-- HTML pages are restricted to those WCD hosts; PDFs linked from them (guides, forms, FAQs) are parsed too.
-- Each answer shows the exact source page/PDF links (citations) and can be scoped by the citizen's **location** (All India / Delhi / UP).
+| Selection | Source(s) used |
+|---|---|
+| Mission Vatsalya | `missionvatsalya.wcd.gov.in` |
+| Mission Shakti | `missionshakti.wcd.gov.in` |
+| Poshan Abhiyaan | national WCD nutrition pages (the dedicated `poshanabhiyaan.gov.in` is a JS-only shell with no crawlable text) |
+| General (no scheme) | `wcd.gov.in` (National) |
+| + a location (currently **Delhi**) | adds `wcd.delhi.gov.in` alongside the above |
+
+- HTML pages are restricted to those WCD hosts; PDFs linked from them (guidelines, SOPs, Acts, FAQs) are parsed too.
+- **Website pages are preferred over attached PDFs**; older/duplicate documents are down-ranked and dated.
+- Add more scheme sites / state subdomains in `scripts/crawl.mjs` (`SITES`) and re-run `npm run kb`.
+
+### Citizen vs Government (citations)
+- **Citizens** (mobile) get the correct answer with **no citations** shown.
+- **Government/officer** login opens a wider **Admin Console** (web) that shows the **source citations** for each answer and a live **Audit** view (`/api/audit`) of recent citizen answers with the exact official page/PDF that backed each — so the department can verify correct sourcing.
 
 Rebuild the knowledge base whenever the source sites change:
 

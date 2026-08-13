@@ -142,14 +142,27 @@ export const T = {
 export const LOCATIONS = [
   { code: 'all', en: 'All India', hi: 'पूरा भारत' },
   { code: 'delhi', en: 'Delhi', hi: 'दिल्ली' },
-  { code: 'up', en: 'Uttar Pradesh', hi: 'उत्तर प्रदेश' },
 ]
 
 Object.assign(T, {
   locLabel: { en: 'Location', hi: 'स्थान' },
+  generic: { en: 'General', hi: 'सामान्य' },
   sourcesLabel: { en: 'Sources', hi: 'स्रोत' },
   verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
   verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
+  // Government / admin console
+  adminSub: { en: 'Government Console · source audit', hi: 'सरकारी कंसोल · स्रोत ऑडिट' },
+  tabAssistant: { en: 'Assistant', hi: 'सहायक' },
+  tabAudit: { en: 'Audit', hi: 'ऑडिट' },
+  auditTitle: { en: 'Answer & Source Audit', hi: 'उत्तर व स्रोत ऑडिट' },
+  auditSub: {
+    en: 'Recent citizen answers with the official sources that backed them.',
+    hi: 'हाल के नागरिक उत्तर और उन्हें समर्थित करने वाले आधिकारिक स्रोत।',
+  },
+  auditEmpty: { en: 'No interactions yet. Ask something in Assistant, or wait for citizen queries.', hi: 'अभी कोई संवाद नहीं। सहायक में कुछ पूछें, या नागरिक प्रश्नों की प्रतीक्षा करें।' },
+  auditQ: { en: 'Question', hi: 'प्रश्न' },
+  auditA: { en: 'Answer', hi: 'उत्तर' },
+  auditNoCite: { en: 'No official source matched (answer withheld / not found).', hi: 'कोई आधिकारिक स्रोत नहीं मिला।' },
 })
 
 export function tr(node, lang) {

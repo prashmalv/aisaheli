@@ -106,6 +106,25 @@ app.get('/api/dashboard', (_req, res) => {
   res.json(dashboardData())
 })
 
+// --- Audit log (government/admin) -------------------------------------------
+// In-memory record of recent citizen interactions and the sources that backed
+// each answer, so the department can verify the assistant cited correctly.
+const auditLog = []
+const AUDIT_MAX = 300
+function maskUser(id) {
+  if (!id) return 'guest'
+  const s = String(id)
+  if (/^\d{6,}$/.test(s)) return '•••••' + s.slice(-4)
+  return s
+}
+function logInteraction(e) {
+  auditLog.push({ ts: new Date().toISOString(), ...e })
+  if (auditLog.length > AUDIT_MAX) auditLog.shift()
+}
+app.get('/api/audit', (_req, res) => {
+  res.json({ count: auditLog.length, interactions: auditLog.slice(-100).reverse() })
+})
+
 // --- Chat (streaming plain text) --------------------------------------------
 // Body: { messages: [{ role:'user'|'assistant', content:string }] }
 app.post('/api/chat', async (req, res) => {
@@ -133,23 +152,28 @@ app.post('/api/chat', async (req, res) => {
     return res.end()
   }
 
+  const state = req.body?.state === 'delhi' ? 'delhi' : 'all'
+  const scheme = ['vatsalya', 'shakti', 'poshan'].includes(req.body?.scheme) ? req.body.scheme : null
+  const role = req.body?.role === 'officer' ? 'officer' : 'citizen'
+  const user = maskUser(req.body?.userId)
+
   try {
-    const state = ['delhi', 'national', 'rajasthan', 'up'].includes(req.body?.state) ? req.body.state : 'all'
     const history = messages
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => ({ role: m.role, content: String(m.content || '') }))
     // Drop any leading assistant (UI greeting) so the turn starts cleanly.
     while (history.length && history[0].role === 'assistant') history.shift()
 
-    // Ground the answer in the crawled official WCD sources (RAG). Falls back to
-    // the baked knowledge prompt only if the index hasn't been built yet.
+    // Ground the answer in the crawled official WCD sources (RAG), scoped to
+    // the selected scheme + location. Falls back to the baked prompt only if
+    // the index hasn't been built yet.
     let citations = []
     let systemContent
     const rag = ragStatus()
     if (rag.ready && lastUser.trim()) {
       let ctx = ''
       try {
-        const { chunks, maxScore } = await retrieve(lastUser, state, 6)
+        const { chunks, maxScore } = await retrieve(lastUser, { scheme, state }, 6)
         if (maxScore >= RAG_MIN_SCORE) {
           const built = buildContext(chunks)
           ctx = built.context
@@ -158,7 +182,7 @@ app.post('/api/chat', async (req, res) => {
       } catch (e) {
         console.error('[chat] retrieval failed:', e.message)
       }
-      systemContent = groundedSystemPrompt(ctx, { channel: isVoice ? 'voice' : 'text', state })
+      systemContent = groundedSystemPrompt(ctx, { channel: isVoice ? 'voice' : 'text', state, scheme })
     } else {
       systemContent = systemPrompt() + (isVoice ? VOICE_ADDON : '')
     }
@@ -171,13 +195,17 @@ app.post('/api/chat', async (req, res) => {
       messages: [{ role: 'system', content: systemContent }, ...history],
     })
 
+    let answer = ''
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content
-      if (delta) res.write(delta)
+      if (delta) { answer += delta; res.write(delta) }
     }
     // Trailing citations block, split out by the frontend.
-    res.write(CITE_SEP + JSON.stringify({ citations, state, grounded: citations.length > 0 }))
+    res.write(CITE_SEP + JSON.stringify({ citations, state, scheme, grounded: citations.length > 0 }))
     res.end()
+
+    // Record for the government/admin audit view.
+    logInteraction({ role, user, channel: isVoice ? 'voice' : 'text', scheme, state, question: lastUser, answer: answer.trim(), citations })
   } catch (err) {
     console.error('[chat] Azure OpenAI error — using scripted fallback:', err.message)
     // Graceful fallback so a live demo never dies on an API hiccup.

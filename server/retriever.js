@@ -58,30 +58,39 @@ async function embedQuery(text) {
   return j.data[0].embedding
 }
 
-// state: 'delhi' | 'national' | 'rajasthan' | 'up' | 'all'
-export async function retrieve(query, state = 'all', k = 6) {
+// Which source scopes a request may draw from.
+// - a selected scheme (vatsalya/shakti/poshan) → that scheme's site only
+// - no scheme (generic) → national WCD site
+// - plus the citizen's state site (currently Delhi) when a location is given
+export function allowedScopes({ scheme, state } = {}) {
+  const a = new Set()
+  a.add(['vatsalya', 'shakti', 'poshan'].includes(scheme) ? scheme : 'national')
+  if (state === 'delhi') a.add('delhi')
+  return a
+}
+
+// opts: { scheme, state }
+export async function retrieve(query, opts = {}, k = 6) {
   const idx = loadIndex()
   if (!idx || !query?.trim()) return { chunks: [], maxScore: 0 }
 
+  const allowed = allowedScopes(opts)
   const q = await embedQuery(query)
   let qn = 0
   for (let i = 0; i < q.length; i++) qn += q[i] * q[i]
   qn = Math.sqrt(qn) || 1
 
-  const useState = state && state !== 'all'
   const scored = []
   for (const c of idx.chunks) {
-    // When a state is chosen, keep that state's docs plus national ones.
-    if (useState && c.state !== state && c.state !== 'national') continue
+    const scopes = c.scopes || [c.state || 'national']
+    if (!scopes.some((s) => allowed.has(s))) continue
     let dot = 0
     const v = c.vec
     for (let i = 0; i < v.length; i++) dot += v[i] * q[i]
     let score = dot / (c.norm * qn)
-    // Small preference for the exact selected state over national.
-    if (useState && c.state === state) score += 0.02
-    // Freshness: annual reports are narrative/statistical — poor sources for
-    // eligibility/assistance answers — so down-rank them; and gently prefer
-    // more recent documents so relevance ties break toward the latest.
+    // Website first: prefer live site pages over attached PDFs/documents.
+    if (c.type === 'page') score += 0.02
+    // Freshness: down-rank annual reports; gently prefer more recent docs.
     if (c.docType === 'annual_report') score -= 0.06
     if (c.year) score -= Math.min(0.04, 0.012 * Math.max(0, THIS_YEAR - c.year))
     scored.push({ c, score })

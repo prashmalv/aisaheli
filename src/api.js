@@ -12,6 +12,13 @@ export async function getDashboard() {
   return r.json()
 }
 
+// Government/admin audit log — recent interactions + the sources that backed them.
+export async function getAudit() {
+  const r = await fetch('/api/audit')
+  if (!r.ok) throw new Error('audit failed')
+  return r.json()
+}
+
 // Synthesises speech via the backend (Azure neural voice) and returns an
 // object-URL for an <audio> element. Throws if TTS is unavailable (503/502),
 // so callers can fall back to the browser's speechSynthesis.
@@ -37,7 +44,14 @@ export async function streamChat(messages, onChunk, signal, opts = {}) {
   const r = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, channel: opts.channel || 'text', state: opts.state || 'all' }),
+    body: JSON.stringify({
+      messages,
+      channel: opts.channel || 'text',
+      state: opts.state || 'all',
+      scheme: opts.scheme || null,
+      role: opts.role || 'citizen',
+      userId: opts.userId || null,
+    }),
     signal,
   })
   if (!r.ok || !r.body) throw new Error('chat failed')

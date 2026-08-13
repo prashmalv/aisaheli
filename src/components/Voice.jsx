@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { streamChat, synthesizeTTS } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
 import { loadConv, saveConv, clearConv } from '../storage.js'
-import { Citations } from './Chat.jsx'
 
 // Strip markdown symbols for clean on-screen display.
 function cleanDisplay(text) {
@@ -38,7 +37,7 @@ function pickVoice(lang) {
   return null
 }
 
-export default function Voice({ lang, health, userId, loc }) {
+export default function Voice({ lang, health, userId, loc, scheme, role = 'citizen' }) {
   const [turns, setTurns] = useState(() => loadConv('voice', userId) || [])
   const [status, setStatus] = useState('idle') // idle | listening | thinking | speaking
   const [handsFree, setHandsFree] = useState(false)
@@ -142,7 +141,7 @@ export default function Voice({ lang, health, userId, loc }) {
           return copy
         }),
         undefined,
-        { channel: 'voice', state: loc || 'all' },
+        { channel: 'voice', state: loc || 'all', scheme: scheme || null, role, userId },
       )
       full = res.text || ''
       citations = res.citations || []
@@ -234,7 +233,6 @@ export default function Voice({ lang, health, userId, loc }) {
         {turns.map((t, i) => (
           <div key={i} className={`v-turn ${t.role}`}>
             {t.role === 'saheli' && t.pending && !t.text ? <span className="v-typing"><span /><span /><span /></span> : t.text}
-            {t.role === 'saheli' && t.citations && <Citations items={t.citations} lang={lang} />}
           </div>
         ))}
 
