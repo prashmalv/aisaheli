@@ -163,6 +163,9 @@ Object.assign(T, {
   auditQ: { en: 'Question', hi: 'प्रश्न' },
   auditA: { en: 'Answer', hi: 'उत्तर' },
   auditNoCite: { en: 'No official source matched (answer withheld / not found).', hi: 'कोई आधिकारिक स्रोत नहीं मिला।' },
+  srcRegister: { en: 'Official sources indexed', hi: 'सूचीबद्ध आधिकारिक स्रोत' },
+  srcDownload: { en: 'Download CSV', hi: 'CSV डाउनलोड करें' },
+  coversLabel: { en: 'This assistant covers', hi: 'यह सहायक इनमें मदद करता है' },
 })
 
 export function tr(node, lang) {

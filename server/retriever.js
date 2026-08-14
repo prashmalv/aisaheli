@@ -47,6 +47,21 @@ export function ragStatus() {
   return { ready: true, chunks: idx.chunks.length, states, builtAt: idx.builtAt }
 }
 
+// Unique list of documents the assistant can cite (one per URL) — for the
+// government "which sources back the answers" export.
+export function listSources() {
+  const idx = loadIndex()
+  if (!idx) return []
+  const seen = new Map()
+  for (const c of idx.chunks) {
+    if (seen.has(c.url)) continue
+    const scheme = (c.scopes || []).find((s) => ['vatsalya', 'shakti', 'poshan'].includes(s))
+    const group = scheme || (c.scopes && c.scopes[0]) || c.state || 'national'
+    seen.set(c.url, { group, site: c.site || '', type: c.type || 'page', title: c.title || '', year: c.year || '', url: c.url })
+  }
+  return [...seen.values()]
+}
+
 async function embedQuery(text) {
   const r = await fetch(`${ENDPOINT}/embeddings`, {
     method: 'POST',

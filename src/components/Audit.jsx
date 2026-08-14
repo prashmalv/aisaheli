@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAudit } from '../api.js'
+import { getAudit, getSources } from '../api.js'
 import { T, tr, SCHEMES } from '../data.js'
 import { Citations } from './Chat.jsx'
 
@@ -7,9 +7,11 @@ import { Citations } from './Chat.jsx'
 // backed each one, so the department can verify correct sourcing.
 export default function Audit({ lang }) {
   const [items, setItems] = useState(null)
+  const [sources, setSources] = useState(null)
 
   function load() { getAudit().then((d) => setItems(d.interactions || [])).catch(() => setItems([])) }
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t) }, [])
+  useEffect(() => { getSources().then(setSources).catch(() => {}) }, [])
 
   const fmt = (ts) => { try { return new Date(ts).toLocaleString('en-IN', { hour12: true }) } catch { return ts } }
   const clean = (s) => String(s || '').replace(/\*\*/g, '').replace(/[*_`#]/g, '').trim()
@@ -23,6 +25,20 @@ export default function Audit({ lang }) {
         </div>
         <button className="audit-refresh" onClick={load} aria-label="Refresh">⟳</button>
       </div>
+
+      {sources && (
+        <div className="src-register">
+          <div className="src-head">
+            <span className="src-title">📚 {tr(T.srcRegister, lang)} · {sources.total}</span>
+            <a className="src-dl" href="/api/sources.csv">⬇ {tr(T.srcDownload, lang)}</a>
+          </div>
+          <div className="src-counts">
+            {Object.entries(sources.byGroup).map(([g, n]) => (
+              <span className="src-count" key={g}>{g} <b>{n}</b></span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {items && items.length === 0 && <p className="audit-empty">{tr(T.auditEmpty, lang)}</p>}
       {!items && <p className="audit-empty">Loading…</p>}

@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { T, tr } from '../data.js'
+import { T, tr, SCHEMES } from '../data.js'
+
+// Shown at login: the three programmes this assistant covers, in order.
+const COVERS = ['shakti', 'vatsalya', 'poshan']
 
 // Demo-only login. No real auth backend — citizens sign in with a mobile number
 // + (simulated) OTP, ministry/officers with an official email + password.
@@ -58,6 +61,18 @@ export default function Login({ lang, setLang, onLogin }) {
         <div className="login-flag" aria-hidden>🇮🇳</div>
         <p className="login-ministry">{tr(T.appSub, lang)}</p>
         <p className="login-tagline">{tr(T.loginTagline, lang)}</p>
+
+        <div className="login-covers">
+          <div className="covers-label">{tr(T.coversLabel, lang)}</div>
+          <div className="covers-list">
+            {COVERS.map((id, i) => (
+              <span className="cover-chip" key={id} style={{ '--c': SCHEMES[id].color }}>
+                <span className="cover-num">{i + 1}</span>
+                <span aria-hidden>{SCHEMES[id].icon}</span> {tr(SCHEMES[id].name, lang)}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="login-card">

@@ -19,6 +19,13 @@ export async function getAudit() {
   return r.json()
 }
 
+// Register of all official sources the assistant can cite (counts by programme).
+export async function getSources() {
+  const r = await fetch('/api/sources')
+  if (!r.ok) throw new Error('sources failed')
+  return r.json()
+}
+
 // Synthesises speech via the backend (Azure neural voice) and returns an
 // object-URL for an <audio> element. Throws if TTS is unavailable (503/502),
 // so callers can fall back to the browser's speechSynthesis.

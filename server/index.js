@@ -7,7 +7,7 @@ import OpenAI from 'openai'
 import { systemPrompt, groundedSystemPrompt, STARTERS } from './knowledge.js'
 import { scriptedReply } from './fallback.js'
 import { dashboardData } from './dashboard.js'
-import { retrieve, buildContext, ragStatus } from './retriever.js'
+import { retrieve, buildContext, ragStatus, listSources } from './retriever.js'
 
 // Delimiter that separates the streamed answer text from the trailing citations
 // JSON. A U+001F unit separator never appears in normal model output.
@@ -123,6 +123,25 @@ function logInteraction(e) {
 }
 app.get('/api/audit', (_req, res) => {
   res.json({ count: auditLog.length, interactions: auditLog.slice(-100).reverse() })
+})
+
+// --- Source register (government showcase) -----------------------------------
+const GROUP_LABEL = { shakti: 'Mission Shakti', vatsalya: 'Mission Vatsalya', poshan: 'Poshan Abhiyaan', national: 'National (MoWCD)', delhi: 'Delhi' }
+app.get('/api/sources', (_req, res) => {
+  const rows = listSources()
+  const byGroup = {}
+  for (const r of rows) { const g = GROUP_LABEL[r.group] || r.group; byGroup[g] = (byGroup[g] || 0) + 1 }
+  res.json({ total: rows.length, byGroup })
+})
+app.get('/api/sources.csv', (_req, res) => {
+  const rows = listSources().sort((a, b) => (a.group + a.site + a.title).localeCompare(b.group + b.site + b.title))
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const host = (u) => { try { return new URL(u).host } catch { return '' } }
+  const lines = [['Programme / Group', 'Source Site', 'Host', 'Type', 'Document / Page Title', 'Year', 'URL'].map(esc).join(',')]
+  for (const r of rows) lines.push([GROUP_LABEL[r.group] || r.group, r.site, host(r.url), String(r.type).toUpperCase(), r.title, r.year, r.url].map(esc).join(','))
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', 'attachment; filename="wcd-ai-saheli-sources.csv"')
+  res.send('﻿' + lines.join('\r\n'))
 })
 
 // --- Chat (streaming plain text) --------------------------------------------
