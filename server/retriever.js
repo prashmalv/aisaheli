@@ -115,17 +115,45 @@ export async function retrieve(query, opts = {}, k = 6) {
   return { chunks: top, maxScore: scored.length ? scored[0].score : 0 }
 }
 
-// Build the grounded context string + a de-duplicated citation list.
+// A short, clean excerpt of the exact passage used (the "where it came from").
+function makeQuote(text, max = 260) {
+  let t = String(text || '').replace(/\s+/g, ' ').trim()
+  if (t.length <= max) return t
+  t = t.slice(0, max)
+  const cut = t.lastIndexOf(' ')
+  return (cut > 100 ? t.slice(0, cut) : t) + '…'
+}
+
+// Chrome/Edge "scroll to text fragment" deep link — jumps to the exact text on
+// the page. Uses a distinctive phrase from the passage (pages only).
+function textFragmentUrl(url, quote) {
+  const phrase = quote.replace(/[…]+$/, '').split(' ').slice(0, 12).join(' ').replace(/[.,;:]+$/, '').trim()
+  if (phrase.length < 15) return null
+  return `${url}#:~:text=${encodeURIComponent(phrase)}`
+}
+
+// Build the grounded context string + a precise, per-passage citation list.
+// Each citation carries the exact quoted passage and, for web pages, a
+// jump-to-text locator so the department can see exactly where a fact came from.
 export function buildContext(chunks) {
   const citations = []
+  const blocks = []
   const seen = new Set()
-  const blocks = chunks.map((c, i) => {
-    if (!seen.has(c.url)) {
-      seen.add(c.url)
-      citations.push({ n: citations.length + 1, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type, year: c.year || null })
-    }
+  for (const c of chunks) {
+    const quote = makeQuote(c.text)
+    const key = c.url + '|' + quote.slice(0, 60)
+    if (seen.has(key)) continue
+    seen.add(key)
+    const n = citations.length + 1
+    citations.push({
+      n, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type,
+      year: c.year || null,
+      quote,
+      locator: c.type === 'page' ? textFragmentUrl(c.url, quote) : null,
+    })
     const yr = c.year ? ` (published ${c.year})` : ''
-    return `[Source ${i + 1}] ${c.site}${yr} — ${c.title}\nURL: ${c.url}\n${c.text}`
-  })
-  return { context: blocks.join('\n\n---\n\n'), citations: citations.slice(0, 4) }
+    blocks.push(`[Source ${n}] ${c.site}${yr} — ${c.title}\nURL: ${c.url}\n${c.text}`)
+    if (citations.length >= 5) break
+  }
+  return { context: blocks.join('\n\n---\n\n'), citations }
 }

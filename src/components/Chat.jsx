@@ -174,18 +174,32 @@ function Bubble({ role, content, citations, pending, lang }) {
 export function Citations({ items, lang }) {
   if (!items || !items.length) return null
   const host = (u) => { try { return new URL(u).host } catch { return u } }
+  const path = (u) => { try { const x = new URL(u); return decodeURIComponent(x.pathname) } catch { return '' } }
   return (
     <div className="cites">
       <div className="cites-title">📎 {tr(T.sourcesLabel, lang)}</div>
       {items.map((c) => (
-        <a key={c.n} className="cite" href={c.url} target="_blank" rel="noreferrer">
-          <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
-          <span className="cite-text">
-            <span className="cite-title">{c.title}</span>
-            <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
-          </span>
-          <span className="cite-go" aria-hidden>↗</span>
-        </a>
+        <div key={c.n} className="cite">
+          <div className="cite-row">
+            <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
+            <span className="cite-text">
+              <span className="cite-title">[{c.n}] {c.title}</span>
+              <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
+              <span className="cite-path">{path(c.url)}</span>
+            </span>
+          </div>
+          {c.quote && (
+            <div className="cite-quote">“{c.quote}”</div>
+          )}
+          <div className="cite-actions">
+            {c.locator && (
+              <a className="cite-jump" href={c.locator} target="_blank" rel="noreferrer">🔎 {tr(T.jumpToText, lang)}</a>
+            )}
+            <a className="cite-open" href={c.url} target="_blank" rel="noreferrer">
+              {c.type === 'pdf' ? `📄 ${tr(T.openPdf, lang)}` : `↗ ${tr(T.openPage, lang)}`}
+            </a>
+          </div>
+        </div>
       ))}
     </div>
   )

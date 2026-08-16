@@ -147,7 +147,10 @@ export const LOCATIONS = [
 Object.assign(T, {
   locLabel: { en: 'Location', hi: 'स्थान' },
   generic: { en: 'General', hi: 'सामान्य' },
-  sourcesLabel: { en: 'Sources', hi: 'स्रोत' },
+  sourcesLabel: { en: 'Sources (exact passages)', hi: 'स्रोत (सटीक अंश)' },
+  jumpToText: { en: 'Jump to text', hi: 'सटीक स्थान खोलें' },
+  openPage: { en: 'Open page', hi: 'पेज खोलें' },
+  openPdf: { en: 'Open PDF', hi: 'PDF खोलें' },
   verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
   verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
   // Government / admin console
