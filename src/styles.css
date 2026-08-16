@@ -589,6 +589,7 @@ ul { list-style: none; }
 .cite-badge[data-type="pdf"] { background: #d92d20; }
 .cite-text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
 .cite-title { font-size: 11.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.cite-page { display: inline-block; margin-left: 6px; font-size: 9.5px; font-weight: 800; color: #fff; background: #d92d20; border-radius: 5px; padding: 1px 6px; vertical-align: middle; }
 .cite-host { font-size: 10px; color: var(--magenta); font-weight: 600; }
 .cite-path { font-size: 9.5px; color: var(--muted); word-break: break-all; line-height: 1.3; }
 .cite-quote {

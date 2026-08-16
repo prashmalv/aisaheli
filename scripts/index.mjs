@@ -170,10 +170,16 @@ async function main() {
 
   const chunks = []
   for (const d of docs) {
-    for (const text of chunkText(d.text)) {
+    const push = (text, page) => {
       const t = String(text || '').trim()
-      if (t.replace(/\s+/g, ' ').length < 20) continue // skip empty/near-empty chunks
-      chunks.push({ url: d.url, title: d.title, scopes: d.scopes, state: d.state, site: d.site, type: d.type, docType: d.docType, year: d.year, text: t })
+      if (t.replace(/\s+/g, ' ').length < 20) return // skip empty/near-empty chunks
+      chunks.push({ url: d.url, title: d.title, scopes: d.scopes, state: d.state, site: d.site, type: d.type, docType: d.docType, year: d.year, page: page || null, text: t })
+    }
+    if (d.type === 'pdf' && Array.isArray(d.pages) && d.pages.length) {
+      // Page-aware chunking so each chunk carries its PDF page number.
+      d.pages.forEach((ptext, pi) => { for (const text of chunkText(ptext)) push(text, pi + 1) })
+    } else {
+      for (const text of chunkText(d.text)) push(text, null)
     }
   }
   console.log(`${chunks.length} chunks. Embedding via ${MODEL}…`)

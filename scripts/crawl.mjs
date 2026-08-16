@@ -131,12 +131,29 @@ const isPdf = (u) => /\.pdf(\?|$)/i.test(u)
 const isAsset = (u) => /\.(css|js|png|jpe?g|gif|svg|ico|webp|mp4|mp3|zip|docx?|xlsx?|pptx?|woff2?|ttf)(\?|$)/i.test(u)
 
 let pdfParse = null
-async function parsePdf(buf) {
+// Parse a PDF into full text AND an array of per-page text, so citations can
+// point to the exact page. pages[i] is page (i+1).
+export async function parsePdf(buf) {
   // Import the lib file directly — pdf-parse's index.js has a debug block that
   // reads a bundled test PDF when run as the main module.
   if (!pdfParse) pdfParse = require('pdf-parse/lib/pdf-parse.js')
-  const r = await pdfParse(buf)
-  return (r.text || '').replace(/\n{3,}/g, '\n\n').trim()
+  const pages = []
+  const pagerender = (pageData) =>
+    pageData.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false }).then((tc) => {
+      let lastY, text = ''
+      for (const item of tc.items) {
+        if (lastY === item.transform[5] || !lastY) text += item.str
+        else text += '\n' + item.str
+        lastY = item.transform[5]
+      }
+      pages.push(text.trim())
+      return text
+    })
+  const r = await pdfParse(buf, { pagerender })
+  return {
+    text: (r.text || '').replace(/\n{3,}/g, '\n\n').trim(),
+    pages: pages.map((p) => p.replace(/\s+/g, ' ').trim()),
+  }
 }
 
 async function crawlSite(site, docs, seenPdf) {
@@ -177,10 +194,10 @@ async function crawlSite(site, docs, seenPdf) {
               if (pr.ok && len <= MAX_PDF_BYTES) {
                 const buf = Buffer.from(await pr.arrayBuffer())
                 if (buf.length <= MAX_PDF_BYTES) {
-                  const ptext = await parsePdf(buf)
+                  const { text: ptext, pages } = await parsePdf(buf)
                   if (ptext && ptext.length > 300) {
                     const pname = decodeURIComponent(link.split('/').pop() || 'document.pdf')
-                    docs.push({ url: link, title: pname.replace(/[-_]/g, ' ').replace(/\.pdf$/i, ''), scope: site.scope, state: site.state, site: site.label, type: 'pdf', text: ptext })
+                    docs.push({ url: link, title: pname.replace(/[-_]/g, ' ').replace(/\.pdf$/i, ''), scope: site.scope, state: site.state, site: site.label, type: 'pdf', text: ptext, pages })
                     pdfs++
                     process.stdout.write(`  [${site.state}] pdf ${pdfs}/${MAX_PDFS}: ${pname.slice(0, 60)}\n`)
                   }
@@ -220,4 +237,8 @@ async function main() {
   console.log(`\nSaved ${docs.length} docs (${(chars / 1000).toFixed(0)}k chars) → ${out}`)
 }
 
-main()
+// Only crawl when run directly (e.g. `node scripts/crawl.mjs`); importing this
+// module (for parsePdf) must NOT trigger a crawl.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main()
+}

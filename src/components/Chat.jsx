@@ -183,7 +183,7 @@ export function Citations({ items, lang }) {
           <div className="cite-row">
             <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
             <span className="cite-text">
-              <span className="cite-title">[{c.n}] {c.title}</span>
+              <span className="cite-title">[{c.n}] {c.title}{c.type === 'pdf' && c.page ? <span className="cite-page">{tr(T.pageLabel, lang)} {c.page}</span> : null}</span>
               <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
               <span className="cite-path">{path(c.url)}</span>
             </span>
@@ -192,12 +192,16 @@ export function Citations({ items, lang }) {
             <div className="cite-quote">“{c.quote}”</div>
           )}
           <div className="cite-actions">
-            {c.locator && (
-              <a className="cite-jump" href={c.locator} target="_blank" rel="noreferrer">🔎 {tr(T.jumpToText, lang)}</a>
+            {c.type === 'pdf' ? (
+              <a className="cite-jump" href={c.locator || c.url} target="_blank" rel="noreferrer">
+                📄 {c.page ? `${tr(T.openPdfPage, lang)} ${c.page}` : tr(T.openPdf, lang)}
+              </a>
+            ) : (
+              <>
+                {c.locator && <a className="cite-jump" href={c.locator} target="_blank" rel="noreferrer">🔎 {tr(T.jumpToText, lang)}</a>}
+                <a className="cite-open" href={c.url} target="_blank" rel="noreferrer">↗ {tr(T.openPage, lang)}</a>
+              </>
             )}
-            <a className="cite-open" href={c.url} target="_blank" rel="noreferrer">
-              {c.type === 'pdf' ? `📄 ${tr(T.openPdf, lang)}` : `↗ ${tr(T.openPage, lang)}`}
-            </a>
           </div>
         </div>
       ))}

@@ -151,6 +151,8 @@ Object.assign(T, {
   jumpToText: { en: 'Jump to text', hi: 'सटीक स्थान खोलें' },
   openPage: { en: 'Open page', hi: 'पेज खोलें' },
   openPdf: { en: 'Open PDF', hi: 'PDF खोलें' },
+  openPdfPage: { en: 'Open PDF at page', hi: 'PDF खोलें, पृष्ठ' },
+  pageLabel: { en: 'p.', hi: 'पृष्ठ' },
   verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
   verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
   // Government / admin console

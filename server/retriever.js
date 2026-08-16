@@ -145,14 +145,20 @@ export function buildContext(chunks) {
     if (seen.has(key)) continue
     seen.add(key)
     const n = citations.length + 1
+    const isPdf = c.type === 'pdf'
+    const locator = isPdf
+      ? (c.page ? `${c.url}#page=${c.page}` : null)   // open the PDF at the exact page
+      : textFragmentUrl(c.url, quote)                  // scroll the web page to the text
     citations.push({
       n, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type,
       year: c.year || null,
+      page: c.page || null,
       quote,
-      locator: c.type === 'page' ? textFragmentUrl(c.url, quote) : null,
+      locator,
     })
     const yr = c.year ? ` (published ${c.year})` : ''
-    blocks.push(`[Source ${n}] ${c.site}${yr} — ${c.title}\nURL: ${c.url}\n${c.text}`)
+    const pg = c.page ? `, page ${c.page}` : ''
+    blocks.push(`[Source ${n}] ${c.site}${yr} — ${c.title}${pg}\nURL: ${c.url}\n${c.text}`)
     if (citations.length >= 5) break
   }
   return { context: blocks.join('\n\n---\n\n'), citations }
