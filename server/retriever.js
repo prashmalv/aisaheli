@@ -115,9 +115,36 @@ export async function retrieve(query, opts = {}, k = 6) {
   return { chunks: top, maxScore: scored.length ? scored[0].score : 0 }
 }
 
+// Site chrome that appears on every WCD page (skip-links, accessibility bar,
+// social/login menus, footer policies). Stripped from citation quotes so the
+// passage shown to the Ministry is real content, not navigation.
+const BOILER = /(skip to main cont?ent|accessibility menu(\s*close)?|screen reader access|stakeholder login|public app|an asterisk\s*\(?\s*\*?\s*\)?\s*indicates? a required field|indicates a required field|required field|important notifications? for|text size|high contrast|last updated|visitors?\s*count|hit counter|website content (?:managed|owned)|content owned|nodal officer|terms (?:&|and) conditions|privacy policy|copyright policy|hyperlink(?:ing)? policy|sitemap|main menu|toggle navigation)/gi
+const SOCIAL = /\b(twitter|facebook|instagram|youtube|linkedin|koo app|koo)\b/gi
+
+// True when a passage reads like real content (enough multi-letter words), not
+// form UI / navigation chrome ("An asterisk ( * ) HSR Waiting Detail").
+function looksLikeContent(s) {
+  return (String(s).match(/[A-Za-zऀ-ॿ]{4,}/g) || []).length >= 8
+}
+
+function cleanText(t) {
+  let s = String(t || '')
+    .replace(BOILER, ' ')
+    .replace(SOCIAL, ' ')
+    .replace(/[•]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  // Drop a leading partial word left by a chunk boundary ("istanceis provided…").
+  if (/^[a-z]/.test(s)) {
+    const sp = s.indexOf(' ')
+    if (sp > 0 && sp <= 22) s = s.slice(sp + 1).trim()
+  }
+  return s
+}
+
 // A short, clean excerpt of the exact passage used (the "where it came from").
 function makeQuote(text, max = 260) {
-  let t = String(text || '').replace(/\s+/g, ' ').trim()
+  let t = cleanText(text)
   if (t.length <= max) return t
   t = t.slice(0, max)
   const cut = t.lastIndexOf(' ')
@@ -141,6 +168,11 @@ export function buildContext(chunks) {
   const seen = new Set()
   for (const c of chunks) {
     const quote = makeQuote(c.text)
+    // Skip citations whose passage is (almost) entirely site chrome/navigation
+    // or form UI once cleaned — they look wrong to a reviewer and add no
+    // verifiable value; the clean PDFs/pages carry the real content.
+    const bare = quote.replace(/…$/, '')
+    if (bare.length < 40 || !looksLikeContent(bare)) continue
     const key = c.url + '|' + quote.slice(0, 60)
     if (seen.has(key)) continue
     seen.add(key)

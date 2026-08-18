@@ -93,7 +93,7 @@ function decodeEntities(s) {
 function htmlToText(html) {
   let s = html
   s = s.replace(/<!--[\s\S]*?-->/g, ' ')
-  s = s.replace(/<(script|style|noscript|svg|head|nav|footer|form)\b[\s\S]*?<\/\1>/gi, ' ')
+  s = s.replace(/<(script|style|noscript|svg|head|nav|footer|form|header|aside)\b[\s\S]*?<\/\1>/gi, ' ')
   s = s.replace(/<\/(p|div|li|tr|h[1-6]|section|article|br)>/gi, '\n')
   s = s.replace(/<li\b[^>]*>/gi, '\n• ')
   s = s.replace(/<[^>]+>/g, ' ')
