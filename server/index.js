@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
 import OpenAI from 'openai'
-import { systemPrompt, groundedSystemPrompt, STARTERS } from './knowledge.js'
+import { systemPrompt, groundedSystemPrompt, smallTalkPrompt, STARTERS } from './knowledge.js'
 import { scriptedReply } from './fallback.js'
 import { dashboardData } from './dashboard.js'
 import { retrieve, buildContext, ragStatus, listSources } from './retriever.js'
@@ -45,6 +45,18 @@ const TTS_VOICES = { hi: 'hi-IN-SwaraNeural', en: 'en-IN-NeerjaNeural' }
 
 const app = express()
 app.use(express.json({ limit: '2mb' }))
+
+// Greetings / casual / meta questions that should NOT trigger source citations.
+function isSmallTalk(q) {
+  const t = String(q || '').toLowerCase().trim().replace(/[!.?]+$/, '')
+  if (!t) return true
+  const words = t.split(/\s+/).length
+  const EN = /\b(hi|hello|hey|yo|namaste|namaskar|how are you|how r u|how's it going|what'?s up|thanks|thank you|thank u|thankyou|bye|good ?(morning|afternoon|evening|night)|who are you|what can you do|what do you do|help me)\b/
+  const HI = /(नमस्ते|नमस्कार|कैसे हो|कैसी हो|कैसे हैं|कैसी हैं|क्या हाल|शुक्रिया|धन्यवाद|आप कौन|तुम कौन|कौन हो|तुम क्या|आप क्या कर|अलविदा)/
+  if (words <= 5 && (EN.test(t) || HI.test(q))) return true
+  if (/^(hi+|hello+|hey+|namaste+|namaskar+)$/.test(t)) return true
+  return false
+}
 
 function escapeXml(s) {
   return String(s)
@@ -174,6 +186,7 @@ app.post('/api/chat', async (req, res) => {
   const state = req.body?.state === 'delhi' ? 'delhi' : 'all'
   const scheme = ['vatsalya', 'shakti', 'poshan'].includes(req.body?.scheme) ? req.body.scheme : null
   const role = req.body?.role === 'officer' ? 'officer' : 'citizen'
+  const lang = req.body?.lang === 'en' ? 'en' : req.body?.lang === 'hi' ? 'hi' : null
   const user = maskUser(req.body?.userId)
 
   try {
@@ -189,7 +202,11 @@ app.post('/api/chat', async (req, res) => {
     let citations = []
     let systemContent
     const rag = ragStatus()
-    if (rag.ready && lastUser.trim()) {
+    if (isSmallTalk(lastUser)) {
+      // Greetings / casual questions don't need sources — answer conversationally
+      // with NO citations.
+      systemContent = smallTalkPrompt(lang) + (isVoice ? VOICE_ADDON : '')
+    } else if (rag.ready && lastUser.trim()) {
       let ctx = ''
       try {
         const { chunks, maxScore } = await retrieve(lastUser, { scheme, state }, 6)
@@ -201,7 +218,7 @@ app.post('/api/chat', async (req, res) => {
       } catch (e) {
         console.error('[chat] retrieval failed:', e.message)
       }
-      systemContent = groundedSystemPrompt(ctx, { channel: isVoice ? 'voice' : 'text', state, scheme })
+      systemContent = groundedSystemPrompt(ctx, { channel: isVoice ? 'voice' : 'text', state, scheme, lang })
     } else {
       systemContent = systemPrompt() + (isVoice ? VOICE_ADDON : '')
     }

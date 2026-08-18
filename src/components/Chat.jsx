@@ -59,7 +59,7 @@ export default function Chat({ lang, health, seed, userId, loc, scheme, showCita
           })
         },
         undefined,
-        { channel: 'text', state: loc || 'all', scheme: scheme || null, role, userId },
+        { channel: 'text', state: loc || 'all', scheme: scheme || null, role, userId, lang },
       )
       setMessages((cur) => {
         const copy = [...cur]
@@ -172,25 +172,56 @@ function Bubble({ role, content, citations, pending, lang }) {
 
 // Verifiable sources under an answer — links to the exact WCD page/PDF.
 export function Citations({ items, lang }) {
+  const [open, setOpen] = useState(false)
   if (!items || !items.length) return null
   const host = (u) => { try { return new URL(u).host } catch { return u } }
   const path = (u) => { try { const x = new URL(u); return decodeURIComponent(x.pathname) } catch { return '' } }
+  const sim = (c) => (typeof c.similarity === 'number' ? Math.round(c.similarity * 100) : null)
+
   return (
     <div className="cites">
-      <div className="cites-title">📎 {tr(T.sourcesLabel, lang)}</div>
-      {items.map((c) => (
+      <div className="cites-head">
+        <span className="cites-title">📎 {tr(T.sourcesLabel, lang)} · {items.length}</span>
+        <button className="cites-toggle" onClick={() => setOpen((v) => !v)}>
+          {open ? tr(T.hideDetails, lang) : tr(T.showDetails, lang)}
+        </button>
+      </div>
+
+      {/* Compact: one small button per source → opens the highlighted spot */}
+      <div className="cite-chips">
+        {items.map((c) => (
+          <a
+            key={c.n}
+            className="cite-chip"
+            data-type={c.type}
+            href={c.locator || c.url}
+            target="_blank"
+            rel="noreferrer"
+            title={`${c.title}${c.type === 'pdf' && c.page ? ` — page ${c.page}` : ''}\n“${c.quote || ''}”`}
+          >
+            <span className="chip-n">{c.n}</span>
+            <span className="chip-type">{c.type === 'pdf' ? 'PDF' : 'WEB'}{c.type === 'pdf' && c.page ? ` p${c.page}` : ''}</span>
+            {sim(c) != null && <span className="chip-sim">{sim(c)}%</span>}
+          </a>
+        ))}
+      </div>
+
+      {/* Detailed: exact passage, page, cosine similarity, jump/open */}
+      {open && items.map((c) => (
         <div key={c.n} className="cite">
           <div className="cite-row">
             <span className="cite-badge" data-type={c.type}>{c.type === 'pdf' ? 'PDF' : 'WEB'}</span>
             <span className="cite-text">
-              <span className="cite-title">[{c.n}] {c.title}{c.type === 'pdf' && c.page ? <span className="cite-page">{tr(T.pageLabel, lang)} {c.page}</span> : null}</span>
+              <span className="cite-title">
+                [{c.n}] {c.title}
+                {c.type === 'pdf' && c.page ? <span className="cite-page">{tr(T.pageLabel, lang)} {c.page}</span> : null}
+                {sim(c) != null && <span className="cite-sim" title="cosine similarity">{tr(T.matchLabel, lang)} {sim(c)}%</span>}
+              </span>
               <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
               <span className="cite-path">{path(c.url)}</span>
             </span>
           </div>
-          {c.quote && (
-            <div className="cite-quote">“{c.quote}”</div>
-          )}
+          {c.quote && <div className="cite-quote">“{c.quote}”</div>}
           <div className="cite-actions">
             {c.type === 'pdf' ? (
               <a className="cite-jump" href={c.locator || c.url} target="_blank" rel="noreferrer">

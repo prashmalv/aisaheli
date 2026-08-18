@@ -141,7 +141,7 @@ export default function Voice({ lang, health, userId, loc, scheme, role = 'citiz
           return copy
         }),
         undefined,
-        { channel: 'voice', state: loc || 'all', scheme: scheme || null, role, userId },
+        { channel: 'voice', state: loc || 'all', scheme: scheme || null, role, userId, lang: langRef.current },
       )
       full = res.text || ''
       citations = res.citations || []

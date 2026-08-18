@@ -153,6 +153,9 @@ Object.assign(T, {
   openPdf: { en: 'Open PDF', hi: 'PDF खोलें' },
   openPdfPage: { en: 'Open PDF at page', hi: 'PDF खोलें, पृष्ठ' },
   pageLabel: { en: 'p.', hi: 'पृष्ठ' },
+  showDetails: { en: 'Show details', hi: 'विवरण दिखाएँ' },
+  hideDetails: { en: 'Hide details', hi: 'विवरण छिपाएँ' },
+  matchLabel: { en: 'match', hi: 'मिलान' },
   verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
   verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
   // Government / admin console

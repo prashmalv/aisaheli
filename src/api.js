@@ -58,6 +58,7 @@ export async function streamChat(messages, onChunk, signal, opts = {}) {
       scheme: opts.scheme || null,
       role: opts.role || 'citizen',
       userId: opts.userId || null,
+      lang: opts.lang || null,
     }),
     signal,
   })

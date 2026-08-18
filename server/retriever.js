@@ -9,6 +9,16 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'index.json')
+const DEAD_PATH = path.join(__dirname, '..', 'data', 'dead-urls.json')
+
+// URLs found to be unreachable/broken by scripts/check-links.mjs — never cited.
+let DEAD = null
+function deadSet() {
+  if (DEAD) return DEAD
+  DEAD = new Set()
+  try { if (fs.existsSync(DEAD_PATH)) JSON.parse(fs.readFileSync(DEAD_PATH, 'utf8')).forEach((u) => DEAD.add(u)) } catch {}
+  return DEAD
+}
 
 const ENDPOINT = (process.env.AZURE_OPENAI_ENDPOINT || '').replace(/\/+$/, '')
 const KEY = process.env.AZURE_OPENAI_API_KEY || ''
@@ -52,9 +62,10 @@ export function ragStatus() {
 export function listSources() {
   const idx = loadIndex()
   if (!idx) return []
+  const dead = deadSet()
   const seen = new Map()
   for (const c of idx.chunks) {
-    if (seen.has(c.url)) continue
+    if (seen.has(c.url) || dead.has(c.url)) continue
     const scheme = (c.scopes || []).find((s) => ['vatsalya', 'shakti', 'poshan'].includes(s))
     const group = scheme || (c.scopes && c.scopes[0]) || c.state || 'national'
     seen.set(c.url, { group, site: c.site || '', type: c.type || 'page', title: c.title || '', year: c.year || '', url: c.url })
@@ -95,8 +106,10 @@ export async function retrieve(query, opts = {}, k = 6) {
   for (let i = 0; i < q.length; i++) qn += q[i] * q[i]
   qn = Math.sqrt(qn) || 1
 
+  const dead = deadSet()
   const scored = []
   for (const c of idx.chunks) {
+    if (dead.has(c.url)) continue // skip sources verified unreachable
     const scopes = c.scopes || [c.state || 'national']
     if (!scopes.some((s) => allowed.has(s))) continue
     let dot = 0
@@ -185,6 +198,7 @@ export function buildContext(chunks) {
       n, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type,
       year: c.year || null,
       page: c.page || null,
+      similarity: typeof c.score === 'number' ? Math.round(c.score * 1000) / 1000 : null,
       quote,
       locator,
     })
