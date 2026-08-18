@@ -45,7 +45,14 @@ export default function App() {
     )
   }
 
-  const showCitations = isOfficer // government/admin sees sources; citizens don't
+  // Normalise the active tab to one valid for the current role. This fixes the
+  // case where an officer session is restored from localStorage while `tab`
+  // still defaults to 'home' (a citizen-only tab) — which rendered a blank body.
+  const officerTabs = ['assistant', 'audit', 'dashboard']
+  const citizenTabs = ['home', 'chat', 'voice']
+  const view = isOfficer
+    ? (officerTabs.includes(tab) ? tab : 'assistant')
+    : (citizenTabs.includes(tab) ? tab : 'home')
 
   return (
     <div className="app-bg">
@@ -53,21 +60,21 @@ export default function App() {
         <div className="tricolor" />
         <Header lang={lang} setLang={setLang} auth={auth} onLogout={handleLogout} isOfficer={isOfficer} />
 
-        {(tab === 'chat' || tab === 'voice' || tab === 'assistant') && (
+        {(view === 'chat' || view === 'voice' || view === 'assistant') && (
           <ContextBar lang={lang} scheme={scheme} setScheme={setScheme} loc={loc} setLoc={setLoc} officer={isOfficer} />
         )}
 
         <main className="screen">
-          {!isOfficer && tab === 'home' && <Home lang={lang} onScheme={chooseScheme} onTalk={() => setTab('voice')} />}
-          {!isOfficer && tab === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={false} role="citizen" />}
-          {!isOfficer && tab === 'voice' && <Voice lang={lang} health={health} userId={auth.id} loc={loc} scheme={scheme} role="citizen" />}
+          {!isOfficer && view === 'home' && <Home lang={lang} onScheme={chooseScheme} onTalk={() => setTab('voice')} />}
+          {!isOfficer && view === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={false} role="citizen" />}
+          {!isOfficer && view === 'voice' && <Voice lang={lang} health={health} userId={auth.id} loc={loc} scheme={scheme} role="citizen" />}
 
-          {isOfficer && tab === 'assistant' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={true} role="officer" />}
-          {isOfficer && tab === 'audit' && <Audit lang={lang} />}
-          {isOfficer && tab === 'dashboard' && <Dashboard lang={lang} />}
+          {isOfficer && view === 'assistant' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={true} role="officer" />}
+          {isOfficer && view === 'audit' && <Audit lang={lang} />}
+          {isOfficer && view === 'dashboard' && <Dashboard lang={lang} />}
         </main>
 
-        <TabBar lang={lang} tab={tab} setTab={setTab} isOfficer={isOfficer} />
+        <TabBar lang={lang} tab={view} setTab={setTab} isOfficer={isOfficer} />
       </div>
     </div>
   )
