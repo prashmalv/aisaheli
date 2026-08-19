@@ -606,6 +606,7 @@ ul { list-style: none; }
 .cite-title { font-size: 11.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
 .cite-page { display: inline-block; margin-left: 6px; font-size: 9.5px; font-weight: 800; color: #fff; background: #d92d20; border-radius: 5px; padding: 1px 6px; vertical-align: middle; }
 .cite-host { font-size: 10px; color: var(--magenta); font-weight: 600; }
+.cite-section { font-size: 10px; color: #1a7a3f; font-weight: 700; }
 .cite-path { font-size: 9.5px; color: var(--muted); word-break: break-all; line-height: 1.3; }
 .cite-quote {
   font-size: 11.5px; line-height: 1.5; color: #333; font-style: italic;

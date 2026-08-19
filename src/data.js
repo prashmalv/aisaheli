@@ -156,6 +156,7 @@ Object.assign(T, {
   showDetails: { en: 'Show details', hi: 'विवरण दिखाएँ' },
   hideDetails: { en: 'Hide details', hi: 'विवरण छिपाएँ' },
   matchLabel: { en: 'match', hi: 'मिलान' },
+  sectionLabel: { en: 'Section', hi: 'अनुभाग' },
   verifyLabel: { en: 'Verify', hi: 'सत्यापित करें' },
   verifiedBadge: { en: 'Answers from official WCD sources', hi: 'उत्तर आधिकारिक WCD स्रोतों से' },
   // Government / admin console

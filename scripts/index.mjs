@@ -108,6 +108,32 @@ function seriesKey(d) {
   return s
 }
 
+// Split page text on @@SEC@@ heading markers → [{section, body}] so each chunk
+// can be tagged with the section it came from. The heading is also prepended to
+// its body so it stays searchable. Text without markers → one section-less part.
+// Heading text that is site chrome (accessibility widget, menus) — not a real
+// content section, so it shouldn't become a chunk's section label.
+const BOILER_HEADING = /^(accessibility|color adjust|text size|language|skip to|screen reader|others|main menu|menu|navigation|search|social|quick links|related links|important links|useful links|footer|header|toggle|font size|contrast|sitemap|breadcrumb)/i
+
+function sectionize(text) {
+  const parts = String(text || '').split(/@@SEC@@\s*([\s\S]*?)\s*@@SEC@@/)
+  const out = []
+  const add = (section, body) => { if (body && body.trim()) out.push({ section, body }) }
+  add(null, parts[0])
+  let lastSection = null
+  for (let i = 1; i < parts.length; i += 2) {
+    const h = (parts[i] || '').trim()
+    const body = parts[i + 1] || ''
+    if (!h || BOILER_HEADING.test(h) || h.length > 90) {
+      add(lastSection, body) // chrome heading → keep body under the previous real section
+      continue
+    }
+    lastSection = h
+    add(h, h + '. ' + body)
+  }
+  return out.length ? out : [{ section: null, body: String(text || '') }]
+}
+
 // Which retrieval scope(s) a document belongs to. Base scope comes from the
 // crawler (which site it was found on). National WCD pages about nutrition are
 // ALSO surfaced under the 'poshan' scope, because the dedicated Poshan site
@@ -170,16 +196,19 @@ async function main() {
 
   const chunks = []
   for (const d of docs) {
-    const push = (text, page) => {
-      const t = String(text || '').trim()
-      if (t.replace(/\s+/g, ' ').length < 20) return // skip empty/near-empty chunks
-      chunks.push({ url: d.url, title: d.title, scopes: d.scopes, state: d.state, site: d.site, type: d.type, docType: d.docType, year: d.year, page: page || null, text: t })
+    const push = (text, page, section) => {
+      const t = String(text || '').replace(/@@SEC@@/g, ' ').replace(/\s+/g, ' ').trim()
+      if (t.length < 20) return // skip empty/near-empty chunks
+      chunks.push({ url: d.url, title: d.title, scopes: d.scopes, state: d.state, site: d.site, type: d.type, docType: d.docType, year: d.year, page: page || null, section: section || null, text: t })
     }
     if (d.type === 'pdf' && Array.isArray(d.pages) && d.pages.length) {
       // Page-aware chunking so each chunk carries its PDF page number.
-      d.pages.forEach((ptext, pi) => { for (const text of chunkText(ptext)) push(text, pi + 1) })
+      d.pages.forEach((ptext, pi) => { for (const text of chunkText(ptext)) push(text, pi + 1, null) })
     } else {
-      for (const text of chunkText(d.text)) push(text, null)
+      // Section-aware chunking for web pages so each chunk records its heading.
+      for (const seg of sectionize(d.text)) {
+        for (const text of chunkText(seg.body)) push(text, null, seg.section)
+      }
     }
   }
   console.log(`${chunks.length} chunks. Embedding via ${MODEL}…`)

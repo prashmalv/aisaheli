@@ -218,6 +218,8 @@ export function Citations({ items, lang }) {
                 {sim(c) != null && <span className="cite-sim" title="cosine similarity">{tr(T.matchLabel, lang)} {sim(c)}%</span>}
               </span>
               <span className="cite-host">{host(c.url)}{c.year ? ` · ${c.year}` : ''}</span>
+              {c.section && <span className="cite-section">§ {tr(T.sectionLabel, lang)}: {c.section}</span>}
+              {c.type === 'pdf' && c.page && <span className="cite-section">§ {tr(T.pageLabel, lang)} {c.page}</span>}
               <span className="cite-path">{path(c.url)}</span>
             </span>
           </div>

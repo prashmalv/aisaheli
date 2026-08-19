@@ -94,7 +94,15 @@ function htmlToText(html) {
   let s = html
   s = s.replace(/<!--[\s\S]*?-->/g, ' ')
   s = s.replace(/<(script|style|noscript|svg|head|nav|footer|form|header|aside)\b[\s\S]*?<\/\1>/gi, ' ')
-  s = s.replace(/<\/(p|div|li|tr|h[1-6]|section|article|br)>/gi, '\n')
+  // Capture section headings (h1–h4) as markers so each chunk can record which
+  // section of the page its text came from (helps officers verify sourcing).
+  s = s.replace(/<h([1-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (_m, _l, inner) => {
+    const t = inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    return t ? `\n\n@@SEC@@ ${t} @@SEC@@\n\n` : '\n\n'
+  })
+  // Turn block-level closers into newlines (td/th too, so table cells separate
+  // instead of gluing into "premises.SANKALP").
+  s = s.replace(/<\/(p|div|li|tr|td|th|h[1-6]|section|article|br)>/gi, '\n')
   s = s.replace(/<li\b[^>]*>/gi, '\n• ')
   s = s.replace(/<[^>]+>/g, ' ')
   s = decodeEntities(s)

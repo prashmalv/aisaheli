@@ -140,6 +140,15 @@ function looksLikeContent(s) {
   return (String(s).match(/[A-Za-zऀ-ॿ]{4,}/g) || []).length >= 8
 }
 
+// Section headings that are UI chrome, not real content sections — hidden from
+// citations (query-time, so no re-index needed).
+const BOILER_SECTION = /^(select language|are you sure|sign ?in|log ?in|logout|close|search|menu|share|print|subscribe|feedback|related links|quick links|useful links|important links|skip to|accessibility|language|text size|font size|contrast|home|back to top)\b/i
+function cleanSection(s) {
+  const t = String(s || '').trim()
+  if (!t || t.length > 90 || BOILER_SECTION.test(t)) return null
+  return t
+}
+
 function cleanText(t) {
   let s = String(t || '')
     .replace(BOILER, ' ')
@@ -198,6 +207,7 @@ export function buildContext(chunks) {
       n, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type,
       year: c.year || null,
       page: c.page || null,
+      section: cleanSection(c.section),
       similarity: typeof c.score === 'number' ? Math.round(c.score * 1000) / 1000 : null,
       quote,
       locator,
