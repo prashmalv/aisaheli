@@ -223,12 +223,25 @@ app.post('/api/chat', async (req, res) => {
       systemContent = systemPrompt() + (isVoice ? VOICE_ADDON : '')
     }
 
+    // Belt-and-suspenders on top of the system directive: remind the model of
+    // the answer language right on the last user turn (most salient position).
+    const modelMessages = [{ role: 'system', content: systemContent }, ...history]
+    if (lang && modelMessages.length) {
+      const li = modelMessages.length - 1
+      if (modelMessages[li].role === 'user') {
+        modelMessages[li] = {
+          ...modelMessages[li],
+          content: `${modelMessages[li].content}\n\n[Reply ONLY in ${lang === 'hi' ? 'Hindi (Devanagari)' : 'English'}.]`,
+        }
+      }
+    }
+
     const stream = await client.chat.completions.create({
       model: DEPLOYMENT,
       max_tokens: 1024,
       temperature: 0.3,
       stream: true,
-      messages: [{ role: 'system', content: systemContent }, ...history],
+      messages: modelMessages,
     })
 
     let answer = ''

@@ -197,11 +197,11 @@ export function Citations({ items, lang }) {
             href={c.locator || c.url}
             target="_blank"
             rel="noreferrer"
-            title={`${c.title}${c.type === 'pdf' && c.page ? ` — page ${c.page}` : ''}\n“${c.quote || ''}”`}
+            title={`${c.title || c.label}${c.type === 'pdf' && c.page ? ` — page ${c.page}` : ''}${c.section ? ` — ${c.section}` : ''}\n“${c.quote || ''}”`}
           >
             <span className="chip-n">{c.n}</span>
-            <span className="chip-type">{c.type === 'pdf' ? 'PDF' : 'WEB'}{c.type === 'pdf' && c.page ? ` p${c.page}` : ''}</span>
-            {sim(c) != null && <span className="chip-sim">{sim(c)}%</span>}
+            <span className="chip-label">{c.label || (c.type === 'pdf' ? 'PDF' : 'Web page')}</span>
+            <span className="chip-meta">{c.type === 'pdf' ? 'PDF' : 'WEB'}{c.type === 'pdf' && c.page ? ` p${c.page}` : ''}{sim(c) != null ? ` · ${sim(c)}%` : ''}</span>
           </a>
         ))}
       </div>

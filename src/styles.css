@@ -581,16 +581,16 @@ ul { list-style: none; }
 .cites-toggle { font-size: 10.5px; font-weight: 700; color: var(--magenta); background: none; padding: 2px 4px; }
 .cite-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cite-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
-  padding: 4px 9px 4px 5px; font-size: 11px; font-weight: 700; color: var(--ink);
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+  padding: 5px 10px 5px 5px; font-size: 11px; font-weight: 700; color: var(--ink);
 }
 .cite-chip:hover { background: #fdf4fb; border-color: #f0cfe7; }
 .cite-chip .chip-n { width: 16px; height: 16px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: #fff; background: #667085; }
 .cite-chip[data-type="pdf"] .chip-n { background: #d92d20; }
 .cite-chip[data-type="page"] .chip-n { background: #2f6fed; }
-.chip-type { font-size: 10px; color: var(--muted); font-weight: 700; }
-.chip-sim { font-size: 9.5px; font-weight: 800; color: var(--magenta); background: #fbe8f6; border-radius: 999px; padding: 1px 6px; }
+.chip-label { font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.chip-meta { font-size: 9.5px; color: var(--muted); font-weight: 700; flex: none; }
 .cite-sim { display: inline-block; margin-left: 6px; font-size: 9.5px; font-weight: 800; color: var(--magenta); background: #fbe8f6; border-radius: 5px; padding: 1px 6px; vertical-align: middle; }
 .cite {
   display: flex; flex-direction: column; gap: 6px;

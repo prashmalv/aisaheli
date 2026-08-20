@@ -164,6 +164,29 @@ function cleanText(t) {
   return s
 }
 
+// A human-friendly short name for a source. Many WCD PDFs have meaningless
+// filenames (hex/numeric like "cae470f1…" or "6870-76"), so fall back to the
+// section heading, then to the first few words of the quoted passage.
+function niceLabel(c, quote) {
+  const title = String(c.title || '').replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+  const titleMain = title.split('|')[0].trim() // drop "… | Mission Shakti | MINISTRY…" suffix
+  const meaningful = (s) =>
+    /[A-Za-zऀ-ॿ]{4,}/.test(s) &&
+    !/^[0-9a-f]{6,}(?:\s[0-9a-f]{3,})*$/i.test(s) && // hex-ish (uuid fragments)
+    !/^[\d\s.\-p]+$/i.test(s)                          // pure numbers / "6870 76" / "p4 p29"
+  const sec = cleanSection(c.section)
+  const firstWords = () => quote.replace(/[“”"]/g, '').split(/\s+/).slice(0, 8).join(' ')
+  if (c.type === 'page') {
+    if (sec) return sec // section is more specific than a generic page title
+    if (meaningful(titleMain) && titleMain.toLowerCase() !== 'home') return titleMain
+    if (meaningful(title)) return title
+    return firstWords()
+  }
+  // PDF: prefer a meaningful document title, else first words of the passage
+  if (meaningful(title)) return title
+  return sec || firstWords()
+}
+
 // A short, clean excerpt of the exact passage used (the "where it came from").
 function makeQuote(text, max = 260) {
   let t = cleanText(text)
@@ -204,7 +227,7 @@ export function buildContext(chunks) {
       ? (c.page ? `${c.url}#page=${c.page}` : null)   // open the PDF at the exact page
       : textFragmentUrl(c.url, quote)                  // scroll the web page to the text
     citations.push({
-      n, title: c.title, url: c.url, state: c.state, site: c.site, type: c.type,
+      n, title: c.title, label: niceLabel(c, quote), url: c.url, state: c.state, site: c.site, type: c.type,
       year: c.year || null,
       page: c.page || null,
       section: cleanSection(c.section),
