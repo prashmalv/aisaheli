@@ -164,6 +164,10 @@ export default function Login({ lang, setLang, onLogin }) {
         </form>
         <p className="login-consent">{tr(T.consent, lang)}</p>
       </div>
+
+      <a className="login-bigscreen" href="/overview" target="_blank" rel="noreferrer">
+        🖥️ {tr(T.bigScreen, lang)} →
+      </a>
     </div>
   )
 }

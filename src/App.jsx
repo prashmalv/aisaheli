@@ -7,8 +7,10 @@ import Voice from './components/Voice.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import Audit from './components/Audit.jsx'
 import Login from './components/Login.jsx'
+import Overview from './components/Overview.jsx'
 
 const AUTH_KEY = 'saheli_auth'
+const OVERVIEW_PATH = /^\/(overview|showcase)\/?$/i
 
 export default function App() {
   const [lang, setLang] = useState('hi')
@@ -28,7 +30,7 @@ export default function App() {
   function handleLogin(a) {
     setAuth(a)
     try { localStorage.setItem(AUTH_KEY, JSON.stringify(a)) } catch {}
-    setTab(a.role === 'officer' ? 'assistant' : 'home')
+    setTab(a.role === 'officer' ? 'dashboard' : 'home')
   }
   function handleLogout() {
     setAuth(null)
@@ -36,6 +38,11 @@ export default function App() {
     setTab('home'); setScheme(null)
   }
   function chooseScheme(id) { setScheme(id || null); setSeed(null); setTab('chat') }
+
+  // Standalone big-screen overview page (/overview) — no login, no phone frame.
+  if (typeof window !== 'undefined' && OVERVIEW_PATH.test(window.location.pathname)) {
+    return <Overview lang={lang} setLang={setLang} />
+  }
 
   if (!auth) {
     return (
@@ -45,13 +52,12 @@ export default function App() {
     )
   }
 
-  // Normalise the active tab to one valid for the current role. This fixes the
-  // case where an officer session is restored from localStorage while `tab`
-  // still defaults to 'home' (a citizen-only tab) — which rendered a blank body.
-  const officerTabs = ['assistant', 'audit', 'dashboard']
+  // Normalise the active tab to one valid for the current role. Officers (govt)
+  // see only Insights + Audit — no chat/assistant.
+  const officerTabs = ['dashboard', 'audit']
   const citizenTabs = ['home', 'chat', 'voice']
   const view = isOfficer
-    ? (officerTabs.includes(tab) ? tab : 'assistant')
+    ? (officerTabs.includes(tab) ? tab : 'dashboard')
     : (citizenTabs.includes(tab) ? tab : 'home')
 
   return (
@@ -60,7 +66,7 @@ export default function App() {
         <div className="tricolor" />
         <Header lang={lang} setLang={setLang} auth={auth} onLogout={handleLogout} isOfficer={isOfficer} />
 
-        {(view === 'chat' || view === 'voice' || view === 'assistant') && (
+        {!isOfficer && (view === 'chat' || view === 'voice') && (
           <ContextBar lang={lang} scheme={scheme} setScheme={setScheme} loc={loc} setLoc={setLoc} officer={isOfficer} />
         )}
 
@@ -69,9 +75,8 @@ export default function App() {
           {!isOfficer && view === 'chat' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={false} role="citizen" />}
           {!isOfficer && view === 'voice' && <Voice lang={lang} health={health} userId={auth.id} loc={loc} scheme={scheme} role="citizen" />}
 
-          {isOfficer && view === 'assistant' && <Chat lang={lang} health={health} seed={seed} userId={auth.id} loc={loc} scheme={scheme} showCitations={true} role="officer" />}
-          {isOfficer && view === 'audit' && <Audit lang={lang} />}
           {isOfficer && view === 'dashboard' && <Dashboard lang={lang} />}
+          {isOfficer && view === 'audit' && <Audit lang={lang} />}
         </main>
 
         <TabBar lang={lang} tab={view} setTab={setTab} isOfficer={isOfficer} />
@@ -102,6 +107,7 @@ function Header({ lang, setLang, auth, onLogout, isOfficer }) {
           <span aria-hidden>{isOfficer ? '🏛️' : '👩'}</span>
           <span className="user-id">{maskId(auth)}</span>
         </span>
+        <a className="icon-btn" href="/overview" target="_blank" rel="noreferrer" title={tr(T.bigScreen, lang)} aria-label={tr(T.bigScreen, lang)}>🖥️</a>
         <button className="lang-toggle" onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')} aria-label="Switch language">
           {lang === 'hi' ? 'EN' : 'हिं'}
         </button>
@@ -138,9 +144,8 @@ function ContextBar({ lang, scheme, setScheme, loc, setLoc, officer }) {
 function TabBar({ lang, tab, setTab, isOfficer }) {
   const items = isOfficer
     ? [
-        { id: 'assistant', icon: '💬', label: T.tabAssistant },
+        { id: 'dashboard', icon: '📊', label: T.tabInsights },
         { id: 'audit', icon: '📎', label: T.tabAudit },
-        { id: 'dashboard', icon: '📊', label: T.tabDash },
       ]
     : [
         { id: 'home', icon: '🏠', label: T.tabHome },

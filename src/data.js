@@ -162,7 +162,9 @@ Object.assign(T, {
   // Government / admin console
   adminSub: { en: 'Government Console · source audit', hi: 'सरकारी कंसोल · स्रोत ऑडिट' },
   tabAssistant: { en: 'Assistant', hi: 'सहायक' },
+  tabInsights: { en: 'Insights', hi: 'इनसाइट्स' },
   tabAudit: { en: 'Audit', hi: 'ऑडिट' },
+  bigScreen: { en: 'Big-screen website view', hi: 'बड़ी स्क्रीन वेबसाइट व्यू' },
   auditTitle: { en: 'Answer & Source Audit', hi: 'उत्तर व स्रोत ऑडिट' },
   auditSub: {
     en: 'Recent citizen answers with the official sources that backed them.',
